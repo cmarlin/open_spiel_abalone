@@ -1,4 +1,6 @@
 set(GAME_SOURCES
+  abalone/abalone.cc
+  abalone/abalone.h
   amazons/amazons.cc
   amazons/amazons.h
   backgammon/backgammon.cc
@@ -275,6 +277,10 @@ target_compile_definitions(bridge_double_dummy_solver PUBLIC DDS_NO_STATIC_INIT)
 add_executable(2048_test twenty_forty_eight/2048_test.cc ${OPEN_SPIEL_OBJECTS}
                $<TARGET_OBJECTS:tests>)
 add_test(2048_test 2048_test)
+
+add_executable(abalone_test abalone/abalone_test.cc ${OPEN_SPIEL_OBJECTS}
+               $<TARGET_OBJECTS:tests>)
+add_test(abalone_test abalone_test)
 
 add_executable(amazons_test amazons/amazons_test.cc ${OPEN_SPIEL_OBJECTS}
                $<TARGET_OBJECTS:tests>)
