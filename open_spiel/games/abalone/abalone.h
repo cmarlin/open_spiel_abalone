@@ -33,6 +33,8 @@
 namespace open_spiel {
 namespace abalone {
 
+#define ORIGIN_BOTTOM false  // true 'a' line is the latest line of the array
+
 enum Direction : int  // counterclockwise order
 {
   Direction_First = 0,
@@ -70,6 +72,7 @@ enum CellState : int
 
 constexpr CellState VALID_BOARD[kNumRows][kNumCols] = {
 	// 1				            2				              3				              4				              5				              6				              7				              8				              9
+#if ORIGIN_BOTTOM
 	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // i
 	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // h
 	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // g
@@ -79,10 +82,22 @@ constexpr CellState VALID_BOARD[kNumRows][kNumCols] = {
 	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid },  // c
 	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // b
 	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid	},  // a
+#else
+	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid	},  // a
+	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // b
+	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid },  // c
+	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid },  // d
+	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // e
+	{ CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // f
+	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // g
+	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // h
+	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // i
+#endif //ORIGIN_BOTTOM
 };
 
 constexpr CellState ABALONE_INIT_CLASSIC[kNumRows][kNumCols] = {
 	// 1				            2				              3				              4				              5				              6				              7				              8				              9
+#if ORIGIN_BOTTOM
 	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2 },  // i
 	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2 },  // h
 	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kEmpty },    // g
@@ -92,6 +107,17 @@ constexpr CellState ABALONE_INIT_CLASSIC[kNumRows][kNumCols] = {
 	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid },  // c
 	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // b
 	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // a
+#else
+	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // a
+	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // b
+	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid },  // c
+	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid },  // d
+	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // e
+	{ CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // f
+	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kEmpty },    // g
+	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2 },  // h
+	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2 },  // i
+#endif //ORIGIN_BOTTOM
 };
 
 /// <summary>
@@ -125,6 +151,7 @@ constexpr CellState ABALONE_INIT_CLASSIC[kNumRows][kNumCols] = {
 // cf https://abaloneonline.wordpress.com/variations/the-classics/
 constexpr CellState ABALONE_INIT_BELGIAN_DAISY[kNumRows][kNumCols] = {
 	// 1				            2				              3				              4				              5				              6				              7				              8				              9
+#if ORIGIN_BOTTOM
 	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kPlayer1,	CellState::kPlayer1 },  // i
 	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1 },  // h
 	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty },    // g
@@ -134,6 +161,17 @@ constexpr CellState ABALONE_INIT_BELGIAN_DAISY[kNumRows][kNumCols] = {
 	{ CellState::kEmpty,	  CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid },  // c
 	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // b
 	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // a
+#else
+	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // a
+	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // b
+	{ CellState::kEmpty,	  CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid },  // c
+	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid },  // d
+	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // e
+	{ CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // f
+	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty },    // g
+	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1 },  // h
+	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kPlayer1,	CellState::kPlayer1 },  // i
+#endif //ORIGIN_BOTTOM
 };
 
 constexpr std::pair<Direction, Direction> Sisters[] = {  // eq to dir+1 and dir+2
@@ -164,6 +202,7 @@ struct Coordinate {
 };
 
 constexpr Coordinate Offsets[] = {
+#if ORIGIN_BOTTOM
 	// row, column
 	{ 0,  1 },  // Direction::RIGHT
 	{ -1,  1 },  // Direction.UP_RIGHT
@@ -171,6 +210,15 @@ constexpr Coordinate Offsets[] = {
 	{ 0, -1 },  // Direction.LEFT
 	{ 1, -1 },  // Direction.DOWN_LEFT
 	{ 1,  0 },  // Direction.DOWN_RIGHT
+#else
+	// row, column
+	{ 0,  1 },  // Direction::RIGHT
+	{ 1,  1 },  // Direction.UP_RIGHT
+	{ 1,  0 },  // Direction.UP_LEFT
+	{ 0, -1 },  // Direction.LEFT
+	{ -1, -1 },  // Direction.DOWN_LEFT
+	{ -1,  0 },  // Direction.DOWN_RIGHT
+#endif //ORIGIN_BOTTOM
 };
 static_assert(sizeof(Offsets) / sizeof(Offsets[0]) == Direction_Last, "mismatch size");
 
@@ -187,6 +235,8 @@ class AbaloneState : public State {
     return IsTerminal() ? kTerminalPlayerId : current_player_;
   }
   std::string ActionToString(Player player, Action action_id) const override;
+  Action StringToAction(Player player, const std::string& action_str) const override;
+
   std::string ToString() const override;
   bool IsTerminal() const override;
   // std::vector<double> Rewards() const override;
@@ -231,6 +281,10 @@ class AbaloneGame : public Game {
   }
   int MaxGameLength() const override { return kHistoryMax; }
   std::string ActionToString(Player player, Action action_id) const override;
+  Action StringToAction(Player player, const std::string& action_str) const;
+
+  // config
+  int m_marbles_to_win; 
 };
 
 CellState PlayerToState(Player player);

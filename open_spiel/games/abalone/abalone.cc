@@ -291,24 +291,27 @@ struct Move {
 		// _state.m_winner = std::get<1>(eval);
 	}
 
-	static std::tuple<bool, Move> from_string(std::string _str)
+	static std::tuple<bool, Move> from_string(const std::string& _str)
 	{
-		if (_str.length() != 4 && _str.length() != 6)
+    auto local_str = _str;
+		if (local_str.length() != 4 && local_str.length() != 6)
 			return std::make_tuple(false, Move());
-		for (int i = 0; i < _str.length(); ++i)
-			_str[i] = tolower(_str[i]);
-		int rowIndex = (kNumRows-1) - (_str[0] - 'a');  // rows are stored in invert order
-		int colIndex = _str[1] - '1';
+		for (int i = 0; i < local_str.length(); ++i)
+			local_str[i] = tolower(local_str[i]);
+		int rowIndex = (kNumRows-1) - (local_str[0] - 'a');  // rows are stored in invert order
+		int colIndex = local_str[1] - '1';
 		if (rowIndex<0 || rowIndex >= kNumRows || colIndex<0 || colIndex >= kNumCols)
 			return std::make_tuple(false, Move());
 		auto start = Coordinate{ rowIndex, colIndex };
-		rowIndex = (kNumRows-1) - (_str[2] - 'a');
-		colIndex = _str[3] - '1';
+		rowIndex = (kNumRows-1) - (local_str[2] - 'a');
+		colIndex = local_str[3] - '1';
 		if (rowIndex<0 || rowIndex >= kNumRows || colIndex<0 || colIndex >= kNumCols)
 			return std::make_tuple(false, Move());
 		auto end = Coordinate{ rowIndex, colIndex };
+    //
 		// inline move
-		if (_str.length() == 4)
+    //
+		if (local_str.length() == 4)
 		{
 			auto dir = Direction_Invalid;
 			auto vl = end.m_row - start.m_row;
@@ -324,35 +327,38 @@ struct Move {
 			return std::make_tuple(false, Move());
 		}
 
+    //
 		// slide move
-		auto start_slide = end;
-		auto slide_line = start_slide.m_row - start.m_row;
-		auto slide_column = start_slide.m_column - start.m_column;
-		if (std::max(std::abs(slide_line), std::abs(slide_column)) > 2)
+    //
+		auto end_slide = end;
+		auto slide_row = end_slide.m_row - start.m_row;
+		auto slide_column = end_slide.m_column - start.m_column;
+		if (std::max(std::abs(slide_row), std::abs(slide_column)) > 2)
 			return std::make_tuple(false, Move());
 
-		slide_line = std::max(std::min(slide_line, 1), -1);
+    // clip vector to match sister's entry
+    slide_row = std::max(std::min(slide_row, 1), -1);
 		slide_column = std::max(std::min(slide_column, 1), -1);
-		auto slide = Coordinate{ slide_line, slide_column };
+		auto slide_vec = Coordinate{ slide_row, slide_column };
 
-		rowIndex = (kNumRows-1) - (_str[4] - 'a');
-		colIndex = _str[5] - '1';
+		rowIndex = (kNumRows-1) - (local_str[4] - 'a');
+		colIndex = local_str[5] - '1';
 		if (rowIndex<0 || rowIndex >= kNumRows || colIndex<0 || colIndex >= kNumCols)
 			return std::make_tuple(false, Move());
 
 		end = Coordinate{ rowIndex, colIndex };
-		auto vl = end.m_row - start.m_row;
-		auto vc = end.m_column - start.m_column;
+		auto move_vec = Coordinate{ end.m_row - start.m_row, end.m_column - start.m_column};
+    
 		for (auto dir = Direction::Direction_First; dir < Direction::Direction_Last; dir = Direction(dir + 1))
 		{
 			auto offset = Offsets[dir];
-			if (vl == offset.m_row && vc == offset.m_column)
+			if (move_vec.m_row == offset.m_row && move_vec.m_column == offset.m_column)
 			{
 				// we suppose slide on left (dir+N) of move direction: 
-				if(Offsets[Sisters[dir].first] == slide || Offsets[Sisters[dir].second] == slide)
-					return std::make_tuple(true, Move{ dir, start, start_slide });
+				if(Offsets[Sisters[dir].first] == slide_vec || Offsets[Sisters[dir].second] == slide_vec)
+					return std::make_tuple(true, Move{ dir, start, end_slide });
 				// we have to swap start / end
-				return std::make_tuple(true, Move{ dir, start_slide, start});
+				return std::make_tuple(true, Move{ dir, end_slide, start});
 			}
 		}
 
@@ -371,12 +377,21 @@ struct Move {
 			snprintf(
 				buff, sizeof(buff),
 				"%c%c%c%c%c%c",
+#if ORIGIN_BOTTOM
 				char('a' + ((kNumRows-1) - this->m_start.m_row)),
 				char('1' + this->m_start.m_column),
 				char('a' + ((kNumRows-1) - this->m_end.m_row)),
 				char('1' + this->m_end.m_column),
 				char('a' + ((kNumRows-1) - (this->m_start.m_row + offset.m_row))),
 				char('1' + this->m_start.m_column + offset.m_column)
+#else
+				char('a' + this->m_start.m_row),
+				char('1' + this->m_start.m_column),
+				char('a' + this->m_end.m_row),
+				char('1' + this->m_end.m_column),
+				char('a' + (this->m_start.m_row + offset.m_row)),
+				char('1' + this->m_start.m_column + offset.m_column)
+#endif //ORIGIN_BOTTOM
 				);
 			ret = std::string(buff);
 
@@ -387,10 +402,17 @@ struct Move {
 			snprintf(
 				buff, sizeof(buff),
 				"%c%c%c%c",
+#if ORIGIN_BOTTOM
 				char('a' + ((kNumRows-1) - this->m_start.m_row)),
 				char('1' + this->m_start.m_column),
 				char('a' + ((kNumRows-1) - this->m_end.m_row)),
 				char('1' + this->m_end.m_column)
+#else
+				char('a' + this->m_start.m_row),
+				char('1' + this->m_start.m_column),
+				char('a' + this->m_end.m_row),
+				char('1' + this->m_end.m_column)
+#endif //ORIGIN_BOTTOM
 			);
 			ret = std::string(buff);
 		}
@@ -498,20 +520,6 @@ Action MoveToAction(const Move& move)
 	return static_cast<Action>(result);
 }
 
-
-// bool BoardHasLine(const std::array<CellState, kNumCells>& board,
-//                   const Player player) {
-//   CellState c = PlayerToState(player);
-//   return (board[0] == c && board[1] == c && board[2] == c) ||
-//          (board[3] == c && board[4] == c && board[5] == c) ||
-//          (board[6] == c && board[7] == c && board[8] == c) ||
-//          (board[0] == c && board[3] == c && board[6] == c) ||
-//          (board[1] == c && board[4] == c && board[7] == c) ||
-//          (board[2] == c && board[5] == c && board[8] == c) ||
-//          (board[0] == c && board[4] == c && board[8] == c) ||
-//          (board[2] == c && board[4] == c && board[6] == c);
-// }
-
 void AbaloneState::DoApplyAction(Action action) {
   //SPIEL_CHECK_EQ(board_[move], CellState::kEmpty);
 
@@ -544,16 +552,12 @@ std::vector<Action> AbaloneState::LegalActions() const {
   if (IsTerminal()) return {};
   // Can move in any empty cell.
   std::vector<Action> moves;
-  // auto actionNum = game_->NumDistinctActions();
-  // kNumCells*kNumActionsPerCell
   for (auto i = 0; i < kNumCells*kNumActionsPerCell; ++i) {
-  //for (auto i = 0; i < kNumCells; ++i) {
     auto move = ActionToMove(i);
     if (move.IsValid(*this)) {
       moves.push_back(i);
     }
   }
-  // std::cout << "available moves:" << moves.size() << std::endl;
   return moves;
 }
 
@@ -562,11 +566,10 @@ std::string AbaloneState::ActionToString(Player player,
   return game_->ActionToString(player, action_id);
 }
 
-// bool AbaloneState::HasLine(Player player) const {
-//   return BoardHasLine(board_, player);
-// }
-
-// bool AbaloneState::IsFull() const { return num_moves_ == kNumCells; }
+Action AbaloneState::StringToAction(Player player, const std::string& action_str) const {
+  const auto &up_game = static_cast<const AbaloneGame&>(*GetGame());
+  return up_game.StringToAction(player, action_str);
+}
 
 AbaloneState::AbaloneState(std::shared_ptr<const Game> game) : State(game) {
   //std::fill(begin(board_), end(board_), CellState::kEmpty);
@@ -579,7 +582,7 @@ AbaloneState::AbaloneState(std::shared_ptr<const Game> game) : State(game) {
 
 std::string AbaloneState::ToString() const {
   std::string str;
-  absl::StrAppend(&str, "board_ = \n");
+  absl::StrAppend(&str, "board = \n");
   auto display_line = [&](std::string prefix, int line, int start, int end, std::string postfix)
   {
     absl::StrAppend(&str, prefix);
@@ -591,6 +594,7 @@ std::string AbaloneState::ToString() const {
     absl::StrAppend(&str, postfix);
     absl::StrAppend(&str, "\n");
   };
+#if ORIGIN_BOTTOM
   display_line("<i>        ", 0, 4, 9, "");
 	display_line("<h>      ", 1, 3, 9, "");
 	display_line("<g>    ", 2, 2, 9, "");
@@ -600,10 +604,21 @@ std::string AbaloneState::ToString() const {
 	display_line("<c>    ", 6, 0, 7, "  <8>");
 	display_line("<b>      ", 7, 0, 6, "  <7>");
 	display_line("<a>        ", 8, 0, 5, "  <6>");
+#else
+  display_line("<i>        ", 8, 4, 9, "");
+	display_line("<h>      ", 7, 3, 9, "");
+	display_line("<g>    ", 6, 2, 9, "");
+	display_line("<f>  ", 5, 1, 9, "");
+	display_line("<e>", 4, 0, 9, "");
+	display_line("<d>  ", 3, 0, 8, "  <9>");
+	display_line("<c>    ", 2, 0, 7, "  <8>");
+	display_line("<b>      ", 1, 0, 6, "  <7>");
+	display_line("<a>        ", 0, 0, 5, "  <6>");
+#endif
 
   absl::StrAppend(&str, "               <1> <2> <3> <4> <5>\n");
 
-  absl::StrAppend(&str, "num_moves_ = ");
+  absl::StrAppend(&str, "num_moves = ");
   absl::StrAppend(&str, num_moves_);
   absl::StrAppend(&str, "\n");
 
@@ -657,11 +672,12 @@ std::vector<double> AbaloneState::Returns() const {
     }
   }
 
-  if (ballCount[0] <= 14 - kMarblesToWin)
+  const auto &up_game = static_cast<const AbaloneGame&>(*GetGame());
+  if (ballCount[0] <= 14 - up_game.m_marbles_to_win)
   {
     return {-1.0, 1.0};
   }
-  if (ballCount[1] <= 14 - kMarblesToWin)
+  if (ballCount[1] <= 14 - up_game.m_marbles_to_win)
   {
     return {1.0, -1.0};
     // (ballCount[0]>ballCount[1])      
@@ -693,6 +709,22 @@ void AbaloneState::ObservationTensor(Player player,
 
   // Treat `values` as a 3-d tensor.
   TensorView<3> view(values, {kCellStates, kNumRows, kNumCols}, true);
+
+  // encode current player's observation to be at the same layer
+  auto player1_index = 0;
+  auto player2_index = 0;
+  switch(player)
+  {
+    case CellState::kPlayer1:
+      player1_index = 2;
+      player2_index = 3;
+      break;
+    case CellState::kPlayer2:
+      player2_index = 2;
+      player1_index = 3;
+      break;
+  }
+
   for (int row = 0; row < kNumRows; ++row) {
     for (int col = 0; col < kNumCols; ++col) {
       auto index = 0;
@@ -704,10 +736,10 @@ void AbaloneState::ObservationTensor(Player player,
           index = 1;
           break;
         case CellState::kPlayer1:
-          index = 2;
+          index = player1_index;
           break;
         case CellState::kPlayer2:
-          index = 3;
+          index = player2_index;
           break;
       }
       view[{index, row, col}] = 1.f;
@@ -731,6 +763,18 @@ std::string AbaloneGame::ActionToString(Player player,
 
 AbaloneGame::AbaloneGame(const GameParameters& params)
     : Game(kGameType, params) {
+  m_marbles_to_win = ParameterValue<int>("marbles_to_win");
+}
+
+Action AbaloneGame::StringToAction(Player player, const std::string& action_str) const {
+  auto maybe_move = Move::from_string(action_str);
+  if(std::get<0>(maybe_move))
+  {
+    return MoveToAction(std::get<1>(maybe_move));
+  }
+
+  SpielFatalError(
+      absl::StrCat("Couldn't find an action matching ", action_str));
 }
 
 }  // namespace abalone
