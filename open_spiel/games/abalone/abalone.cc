@@ -566,10 +566,10 @@ std::string AbaloneState::ActionToString(Player player,
   return game_->ActionToString(player, action_id);
 }
 
-Action AbaloneState::StringToAction(Player player, const std::string& action_str) const {
+/*Action AbaloneState::StringToAction(Player player, const std::string& action_str) const {
   const auto &up_game = static_cast<const AbaloneGame&>(*GetGame());
   return up_game.StringToAction(player, action_str);
-}
+}*/
 
 AbaloneState::AbaloneState(std::shared_ptr<const Game> game) : State(game) {
   //std::fill(begin(board_), end(board_), CellState::kEmpty);
@@ -708,7 +708,7 @@ void AbaloneState::ObservationTensor(Player player,
   SPIEL_CHECK_LT(player, num_players_);
 
   // Treat `values` as a 3-d tensor.
-  TensorView<3> view(values, {kCellStates, kNumRows, kNumCols}, true);
+  TensorView<3> view(values, {kNumPlayers + 1, kNumRows, kNumCols}, true);
 
   // encode current player's observation to be at the same layer
   auto player1_index = 0;
@@ -716,12 +716,12 @@ void AbaloneState::ObservationTensor(Player player,
   switch(player)
   {
     case CellState::kPlayer1:
-      player1_index = 2;
-      player2_index = 3;
+      player1_index = 1;
+      player2_index = 2;
       break;
     case CellState::kPlayer2:
-      player2_index = 2;
-      player1_index = 3;
+      player1_index = 2;
+      player2_index = 1;
       break;
   }
 
@@ -730,10 +730,9 @@ void AbaloneState::ObservationTensor(Player player,
       auto index = 0;
       switch(BoardAt(row, col)){
         case CellState::kInvalid:
-          index = 0;
-          break;
+          continue;
         case CellState::kEmpty:
-          index = 1;
+          index = 0;
           break;
         case CellState::kPlayer1:
           index = player1_index;
@@ -766,7 +765,7 @@ AbaloneGame::AbaloneGame(const GameParameters& params)
   m_marbles_to_win = ParameterValue<int>("marbles_to_win");
 }
 
-Action AbaloneGame::StringToAction(Player player, const std::string& action_str) const {
+/*Action AbaloneGame::StringToAction(Player player, const std::string& action_str) const {
   auto maybe_move = Move::from_string(action_str);
   if(std::get<0>(maybe_move))
   {
@@ -775,7 +774,7 @@ Action AbaloneGame::StringToAction(Player player, const std::string& action_str)
 
   SpielFatalError(
       absl::StrCat("Couldn't find an action matching ", action_str));
-}
+}*/
 
 }  // namespace abalone
 }  // namespace open_spiel

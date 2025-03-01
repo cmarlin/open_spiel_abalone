@@ -235,7 +235,7 @@ class AbaloneState : public State {
     return IsTerminal() ? kTerminalPlayerId : current_player_;
   }
   std::string ActionToString(Player player, Action action_id) const override;
-  Action StringToAction(Player player, const std::string& action_str) const override;
+  // Action StringToAction(Player player, const std::string& action_str) const override;
 
   std::string ToString() const override;
   bool IsTerminal() const override;
@@ -277,11 +277,11 @@ class AbaloneGame : public Game {
   absl::optional<double> UtilitySum() const override { return 0; }
   double MaxUtility() const override { return 1; }
   std::vector<int> ObservationTensorShape() const override {
-    return {kCellStates, kNumRows, kNumCols};
+    return {kNumPlayers + 1, kNumRows, kNumCols};  // status: empty, player1, player2
   }
   int MaxGameLength() const override { return kHistoryMax; }
   std::string ActionToString(Player player, Action action_id) const override;
-  Action StringToAction(Player player, const std::string& action_str) const;
+  //Action StringToAction(Player player, const std::string& action_str) const;
 
   // config
   int m_marbles_to_win; 
