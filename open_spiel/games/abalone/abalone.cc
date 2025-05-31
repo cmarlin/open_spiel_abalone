@@ -42,7 +42,8 @@ const GameType kGameType{
     /*provides_observation_string=*/true,
     /*provides_observation_tensor=*/true,
     /*parameter_specification=*/{
-      {"marbles_to_win", GameParameter(kMarblesToWin)}
+      {"marbles_to_win", GameParameter(kMarblesToWin)},
+      {"marble_reward", GameParameter(kMarbleReward)}
     }  // no parameters
 };
 
@@ -685,7 +686,7 @@ std::vector<double> AbaloneState::Returns() const {
     // return {0.0, 0.0};
   }
   //return {0.0, 0.0};
-  const float marble_reward = 0.1;
+  const double marble_reward = up_game.m_marble_reward;
   auto marble_balance = (14-ballCount[1])-(14-ballCount[0]);
   return {marble_balance*marble_reward, -marble_balance*marble_reward};
 }
@@ -763,6 +764,7 @@ std::string AbaloneGame::ActionToString(Player player,
 AbaloneGame::AbaloneGame(const GameParameters& params)
     : Game(kGameType, params) {
   m_marbles_to_win = ParameterValue<int>("marbles_to_win");
+  m_marble_reward = ParameterValue<double>("marble_reward");
 }
 
 /*Action AbaloneGame::StringToAction(Player player, const std::string& action_str) const {

@@ -59,6 +59,7 @@ inline constexpr int kNumActionsPerDirection = 5;  // single move or slide move 
 inline constexpr int kNumActionsPerCell = Direction::Direction_Last * kNumActionsPerDirection;
 inline constexpr int kHistoryMax = 200;  // a game coudn't last more than that
 inline constexpr int kMarblesToWin = 6;  // stop a game when one player lost this number of marbles (default:6 blitz:4)
+inline constexpr double kMarbleReward = 0.1;
 inline constexpr int kCellStates = 2 + kNumPlayers;  // empty, invalid, and players
 
 // State of a cell.
@@ -284,7 +285,8 @@ class AbaloneGame : public Game {
   //Action StringToAction(Player player, const std::string& action_str) const;
 
   // config
-  int m_marbles_to_win; 
+  int m_marbles_to_win;
+  double m_marble_reward;
 };
 
 CellState PlayerToState(Player player);
