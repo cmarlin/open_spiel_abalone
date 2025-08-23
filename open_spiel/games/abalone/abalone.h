@@ -61,6 +61,8 @@ inline constexpr int kHistoryMax = 200;  // a game coudn't last more than that
 inline constexpr int kMarblesToWin = 6;  // stop a game when one player lost this number of marbles (default:6 blitz:4)
 inline constexpr double kMarbleReward = 0.1;
 inline constexpr int kCellStates = 2 + kNumPlayers;  // empty, invalid, and players
+inline const std::string kDefaultBoard = "classic";  // default board to play
+inline constexpr bool kInvertBoard = false;  // invert player 1 and player 2 positions
 
 // State of a cell.
 enum CellState : int
@@ -269,24 +271,29 @@ class AbaloneState : public State {
 
 // Game object.
 class AbaloneGame : public Game {
- public:
-  explicit AbaloneGame(const GameParameters& params);
-  int NumDistinctActions() const override { return kNumCells*kNumActionsPerCell; }
-  std::unique_ptr<State> NewInitialState() const override;
-  int NumPlayers() const override { return kNumPlayers; }
-  double MinUtility() const override { return -1; }
-  absl::optional<double> UtilitySum() const override { return 0; }
-  double MaxUtility() const override { return 1; }
-  std::vector<int> ObservationTensorShape() const override {
-    return {kNumPlayers + 1, kNumRows, kNumCols};  // status: empty, player1, player2
-  }
-  int MaxGameLength() const override { return kHistoryMax; }
-  std::string ActionToString(Player player, Action action_id) const override;
-  //Action StringToAction(Player player, const std::string& action_str) const;
+	public:
+		explicit AbaloneGame(const GameParameters& params);
+		int NumDistinctActions() const override { return kNumCells*kNumActionsPerCell; }
+		std::unique_ptr<State> NewInitialState() const override;
+		int NumPlayers() const override { return kNumPlayers; }
+		double MinUtility() const override { return -1; }
+		absl::optional<double> UtilitySum() const override { return 0; }
+		double MaxUtility() const override { return 1; }
+		std::vector<int> ObservationTensorShape() const override {
+			return {kNumPlayers + 1, kNumRows, kNumCols};  // status: empty, player1, player2
+		}
+		int MaxGameLength() const override { return kHistoryMax; }
+		std::string ActionToString(Player player, Action action_id) const override;
+		//Action StringToAction(Player player, const std::string& action_str) const;
 
-  // config
-  int m_marbles_to_win;
-  double m_marble_reward;
+	protected:
+		friend class AbaloneState;
+
+		// config
+		int m_marbles_to_win;
+		double m_marble_reward;
+		std::string m_init_board;
+		bool m_init_invert;  // invert position of player 1 and 2
 };
 
 CellState PlayerToState(Player player);

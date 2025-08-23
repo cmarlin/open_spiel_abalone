@@ -43,7 +43,9 @@ const GameType kGameType{
     /*provides_observation_tensor=*/true,
     /*parameter_specification=*/{
       {"marbles_to_win", GameParameter(kMarblesToWin)},
-      {"marble_reward", GameParameter(kMarbleReward)}
+      {"marble_reward", GameParameter(kMarbleReward)},
+	  {"board", GameParameter(kDefaultBoard)},
+	  {"invert", GameParameter(kInvertBoard)}
     }  // no parameters
 };
 
@@ -574,11 +576,28 @@ std::string AbaloneState::ActionToString(Player player,
 
 AbaloneState::AbaloneState(std::shared_ptr<const Game> game) : State(game) {
   //std::fill(begin(board_), end(board_), CellState::kEmpty);
+  const auto &up_game = static_cast<const AbaloneGame&>(*game);
+  auto init_board = ABALONE_INIT_CLASSIC;
+  if(up_game.m_init_board.compare("belgian_daisy")==0)
+  {
+	init_board = ABALONE_INIT_BELGIAN_DAISY;
+  }
+
+  auto invert_board = [invert=up_game.m_init_invert](CellState c){
+	if(invert && c==CellState::kPlayer1)
+		return CellState::kPlayer2;
+	if(invert && c==CellState::kPlayer2)
+		return CellState::kPlayer1;
+	return c;
+  };
+  
   for(int r=0; r<kNumRows; r++)
+  {
     for(int c=0; c<kNumCols; c++)
     {
-      SetBoard(r, c, ABALONE_INIT_CLASSIC[r][c]);
+      SetBoard(r, c, invert_board(init_board[r][c]));
     }
+  }
 }
 
 std::string AbaloneState::ToString() const {
@@ -765,6 +784,8 @@ AbaloneGame::AbaloneGame(const GameParameters& params)
     : Game(kGameType, params) {
   m_marbles_to_win = ParameterValue<int>("marbles_to_win");
   m_marble_reward = ParameterValue<double>("marble_reward");
+  m_init_board = ParameterValue<std::string>("board");
+  m_init_invert = ParameterValue<bool>("invert"); 
 }
 
 /*Action AbaloneGame::StringToAction(Player player, const std::string& action_str) const {
