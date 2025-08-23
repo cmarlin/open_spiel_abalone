@@ -578,10 +578,17 @@ AbaloneState::AbaloneState(std::shared_ptr<const Game> game) : State(game) {
   //std::fill(begin(board_), end(board_), CellState::kEmpty);
   const auto &up_game = static_cast<const AbaloneGame&>(*game);
   auto init_board = ABALONE_INIT_CLASSIC;
-  if(up_game.m_init_board.compare("belgian_daisy")==0)
+  if(up_game.m_init_board.compare("classic")==0)
   {
-	init_board = ABALONE_INIT_BELGIAN_DAISY;
+    init_board = ABALONE_INIT_CLASSIC;
   }
+  else if(up_game.m_init_board.compare("belgian_daisy")==0)
+  {
+    init_board = ABALONE_INIT_BELGIAN_DAISY;
+  } else {
+    SPIEL_CHECK_TRUE(false);  // board init not found
+  }
+  
 
   auto invert_board = [invert=up_game.m_init_invert](CellState c){
 	if(invert && c==CellState::kPlayer1)
