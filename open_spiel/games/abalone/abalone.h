@@ -257,16 +257,18 @@ class AbaloneState : public State {
     return board_[row * kNumCols + column];
   }
   Player outcome() const { return outcome_; }
+  virtual void UndoAction(Player player, Action action);
 
  protected:
   std::array<CellState, kNumCells> board_;
   void DoApplyAction(Action action) override;
+  void ResetBoard();
 
  private:
   friend struct Move;
   Player current_player_ = 0;         // Player zero goes first
   Player outcome_ = kInvalidPlayer;   // winner
-  int num_moves_ = 0;
+  //int num_moves_ = 0;
 };
 
 // Game object.

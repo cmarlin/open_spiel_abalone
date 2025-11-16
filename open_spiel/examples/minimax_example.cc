@@ -17,6 +17,7 @@
 #include "open_spiel/algorithms/minimax.h"
 #include "open_spiel/games/breakthrough/breakthrough.h"
 #include "open_spiel/games/pig/pig.h"
+#include "open_spiel/games/abalone/abalone.h"
 #include "open_spiel/spiel.h"
 #include "open_spiel/spiel_utils.h"
 
@@ -24,6 +25,7 @@ inline constexpr int kSearchDepth = 2;
 inline constexpr int kSearchDepthPig = 10;
 inline constexpr int kWinscorePig = 30;
 inline constexpr int kDiceoutcomesPig = 2;
+inline constexpr int kSearchDepthAbalone = 4;
 inline constexpr int kSeed = 726345721;
 
 namespace open_spiel {
@@ -107,11 +109,83 @@ void PlayPig(std::mt19937& rng) {
   std::cout << state->ToString() << std::endl;
 }
 
+const int RingWeights[] = { 9, 7, 6, 4, 1 };
+const int RFactor = 5;
+const int BFactor = 61;
+
+/**
+/ @return score relative to CellState::kPlayer1
+*/
+int AbaloneHeuristic(const abalone::AbaloneState& _state)
+{
+	int ballCount[2] = { 0, 0 };
+	int scoreCount[2] = { 0, 0 };
+
+	for (auto row = 0; row < abalone::kNumRows; ++row)
+	{
+		for (auto column = 0; column < abalone::kNumCols; ++column)
+		{
+			auto player = _state.BoardAt(row, column);
+			if ( player >= 0 )
+			{
+				auto y = row;
+				auto x = column;
+
+				auto dY = y - abalone::kNumRows / 2;
+				auto dX = x - abalone::kNumCols / 2;
+
+				auto distToCenter = 0;
+				if (dX * dY >= 0)
+					distToCenter = std::max(std::abs(dX), std::abs(dY));
+				else
+					distToCenter = std::abs(dX - dY);
+
+				scoreCount[player] += RingWeights[distToCenter];
+				ballCount[player]++;
+			}
+		}
+	}
+
+	return scoreCount[abalone::kPlayer1] * RFactor + (14 - ballCount[abalone::kPlayer2]) * BFactor
+		- scoreCount[abalone::kPlayer2] * RFactor - (14 - ballCount[abalone::kPlayer1]) * BFactor;
+}
+
+void PlayAbalone(std::mt19937& rng) {
+  std::shared_ptr<const Game> game =
+      LoadGame("abalone", {{"marbles_to_win", GameParameter(6)},
+                                {"board", GameParameter(abalone::kDefaultBoard)}});
+  std::unique_ptr<State> state = game->NewInitialState();
+  while (!state->IsTerminal()) {
+    std::cout << std::endl << state->ToString() << std::endl;
+
+    Player player = state->CurrentPlayer();
+    std::pair<double, Action> value_action = algorithms::AlphaBetaSearch(
+        *game, state.get(), [player](const State& state) {
+            auto abalone_state = reinterpret_cast<const abalone::AbaloneState&>(state);
+            return (player == abalone::kPlayer1 ?
+                    AbaloneHeuristic(abalone_state) :
+                    -AbaloneHeuristic(abalone_state));
+            },
+        kSearchDepthAbalone, player);
+
+    std::cout << std::endl << "Player " << player << " choosing action "
+              << state->ActionToString(player, value_action.second)
+              << " with heuristic value (to black) " << value_action.first
+              << std::endl;
+
+    state->ApplyAction(value_action.second);
+  }
+
+  std::cout << "Terminal state: " << std::endl;
+  std::cout << state->ToString() << std::endl;
+}
+
 }  // namespace
 }  // namespace open_spiel
 
 int main(int argc, char **argv) {
   std::mt19937 rng(kSeed);  // Random number generator.
-  open_spiel::PlayBreakthrough();
-  open_spiel::PlayPig(rng);
+  // open_spiel::PlayBreakthrough();
+  // open_spiel::PlayPig(rng);
+  open_spiel::PlayAbalone(rng);
 }

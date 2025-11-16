@@ -65,7 +65,12 @@ double _alpha_beta(State* state, int depth, double alpha, double beta,
   if (player == maximizing_player) {
     double value = -std::numeric_limits<double>::infinity();
 
-    for (Action action : state->LegalActions()) {
+    auto actions = state->LegalActions();
+    auto rng = std::default_random_engine {};
+    std::shuffle(std::begin(actions), std::end(actions), rng);
+
+    for (Action action : actions) {
+      // auto child_state = state->Clone();
       state->ApplyAction(action);
       double child_value =
           _alpha_beta(state, /*depth=*/depth - 1, /*alpha=*/alpha,
@@ -90,8 +95,13 @@ double _alpha_beta(State* state, int depth, double alpha, double beta,
   } else {
     double value = std::numeric_limits<double>::infinity();
 
-    for (Action action : state->LegalActions()) {
+    auto actions = state->LegalActions();
+    auto rng = std::default_random_engine {};
+    std::shuffle(std::begin(actions), std::end(actions), rng);
+
+    for (Action action : actions) {
       state->ApplyAction(action);
+      // auto child_state = state->Clone();
       double child_value =
           _alpha_beta(state, /*depth=*/depth - 1, /*alpha=*/alpha,
                       /*beta=*/beta, value_function, maximizing_player,

@@ -523,6 +523,16 @@ Action MoveToAction(const Move& move)
 	return static_cast<Action>(result);
 }
 
+void AbaloneState::UndoAction(Player player, Action action) {
+  // We don't have direct undo functionality, we try to apply whole history
+  history_.pop_back();
+  --move_number_;
+  ResetBoard();
+  for (auto [_, action] : history_) {
+    DoApplyAction(action);
+  }
+}
+
 void AbaloneState::DoApplyAction(Action action) {
   //SPIEL_CHECK_EQ(board_[move], CellState::kEmpty);
 
@@ -548,7 +558,7 @@ void AbaloneState::DoApplyAction(Action action) {
   }
   // update step
   current_player_ = 1 - current_player_;
-  num_moves_ += 1;
+  // num_moves_ += 1;
 }
 
 std::vector<Action> AbaloneState::LegalActions() const {
@@ -569,14 +579,9 @@ std::string AbaloneState::ActionToString(Player player,
   return game_->ActionToString(player, action_id);
 }
 
-/*Action AbaloneState::StringToAction(Player player, const std::string& action_str) const {
-  const auto &up_game = static_cast<const AbaloneGame&>(*GetGame());
-  return up_game.StringToAction(player, action_str);
-}*/
-
-AbaloneState::AbaloneState(std::shared_ptr<const Game> game) : State(game) {
+void AbaloneState::ResetBoard(){
   //std::fill(begin(board_), end(board_), CellState::kEmpty);
-  const auto &up_game = static_cast<const AbaloneGame&>(*game);
+  const auto &up_game = static_cast<const AbaloneGame&>(*this->game_);
   auto init_board = ABALONE_INIT_CLASSIC;
   if(up_game.m_init_board.compare("classic")==0)
   {
@@ -605,6 +610,18 @@ AbaloneState::AbaloneState(std::shared_ptr<const Game> game) : State(game) {
       SetBoard(r, c, invert_board(init_board[r][c]));
     }
   }
+
+  current_player_ = 0;
+  outcome_ = kInvalidPlayer;
+}
+
+/*Action AbaloneState::StringToAction(Player player, const std::string& action_str) const {
+  const auto &up_game = static_cast<const AbaloneGame&>(*GetGame());
+  return up_game.StringToAction(player, action_str);
+}*/
+
+AbaloneState::AbaloneState(std::shared_ptr<const Game> game) : State(game) {
+  ResetBoard();
 }
 
 std::string AbaloneState::ToString() const {
@@ -645,8 +662,8 @@ std::string AbaloneState::ToString() const {
 
   absl::StrAppend(&str, "               <1> <2> <3> <4> <5>\n");
 
-  absl::StrAppend(&str, "num_moves = ");
-  absl::StrAppend(&str, num_moves_);
+  absl::StrAppend(&str, "move_number_ = ");
+  absl::StrAppend(&str, move_number_);
   absl::StrAppend(&str, "\n");
 
   auto returns = Returns();
@@ -668,7 +685,7 @@ std::string AbaloneState::ToString() const {
 }
 
 bool AbaloneState::IsTerminal() const {
-  return outcome_ != kInvalidPlayer || num_moves_ >= kHistoryMax;
+  return outcome_ != kInvalidPlayer || move_number_ >= kHistoryMax;
 }
 
 // std::vector<double> AbaloneState::Rewards() const {
