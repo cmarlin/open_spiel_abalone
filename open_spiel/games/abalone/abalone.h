@@ -22,290 +22,92 @@
 #include <vector>
 
 #include "open_spiel/spiel.h"
+#include "abalone_core.h"
 
-// Simple game of Abalone
-// https://en.wikipedia.org/wiki/Abalone_(board_game)
-//
+
 // Parameters: none
 // marbles_to_win
 // initital_board
 
-namespace open_spiel {
-namespace abalone {
-
-#define ORIGIN_BOTTOM false  // true 'a' line is the latest line of the array
-
-enum Direction : int  // counterclockwise order
+namespace open_spiel
 {
-  Direction_First = 0,
 
-  RIGHT = Direction_First,
-  UP_RIGHT = 1,
-  UP_LEFT = 2,
-  LEFT = 3,
-  DOWN_LEFT = 4,
-  DOWN_RIGHT = 5,
+  namespace abalone
+  {
+    // State of an in-play game.
+    class AbaloneState : public State
+    {
+    public:
+      AbaloneState(std::shared_ptr<const Game> game);
 
-  Direction_Last = 6,
-  Direction_Invalid = -1,
-};
+      AbaloneState(const AbaloneState &) = default;
+      AbaloneState &operator=(const AbaloneState &) = default;
 
-// Constants.
-inline constexpr int kNumPlayers = 2;
-inline constexpr int kNumRows = 9;
-inline constexpr int kNumCols = 9;
-inline constexpr int kNumCells = kNumRows * kNumCols;
-inline constexpr int kNumActionsPerDirection = 5;  // single move or slide move x2 or x3 from near or far left
-inline constexpr int kNumActionsPerCell = Direction::Direction_Last * kNumActionsPerDirection;
-inline constexpr int kHistoryMax = 200;  // a game coudn't last more than that
-inline constexpr int kMarblesToWin = 6;  // stop a game when one player lost this number of marbles (default:6 blitz:4)
-inline constexpr double kMarbleReward = 0.1;
-inline constexpr int kCellStates = 2 + kNumPlayers;  // empty, invalid, and players
-inline const std::string kDefaultBoard = "classic";  // default board to play
-inline constexpr bool kInvertBoard = false;  // invert player 1 and player 2 positions
+      Player CurrentPlayer() const override
+      {
+        return IsTerminal() ? kTerminalPlayerId : core_state_.ToPlay();
+      }
+      std::string ActionToString(Player player, Action action_id) const override;
+      Action StringToAction(Player player, const std::string& action_str) const override;
 
-// State of a cell.
-enum CellState : int
-{
-	kInvalid = -2,
-	kEmpty = -1,
-	kPlayer1 = 0,
-	kPlayer2 = 1,
-};
+      std::string ToString() const override;
+      bool IsTerminal() const override;
+      // std::vector<double> Rewards() const override;
+      std::vector<double> Returns() const override;
+      std::string InformationStateString(Player player) const override;
+      std::string ObservationString(Player player) const override;
+      void ObservationTensor(Player player,
+                             absl::Span<float> values) const override;
+      std::unique_ptr<State> Clone() const override;
+      std::vector<Action> LegalActions() const override;
+      virtual void UndoAction(Player player, Action action);
 
-constexpr CellState VALID_BOARD[kNumRows][kNumCols] = {
-	// 1				            2				              3				              4				              5				              6				              7				              8				              9
-#if ORIGIN_BOTTOM
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // i
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // h
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // g
-	{ CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // f
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // e
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid },  // d
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid },  // c
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // b
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid	},  // a
-#else
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid	},  // a
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // b
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid },  // c
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid },  // d
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // e
-	{ CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // f
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // g
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // h
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // i
-#endif //ORIGIN_BOTTOM
-};
+      abalone_core::core_state core_state_;
 
-constexpr CellState ABALONE_INIT_CLASSIC[kNumRows][kNumCols] = {
-	// 1				            2				              3				              4				              5				              6				              7				              8				              9
-#if ORIGIN_BOTTOM
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2 },  // i
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2 },  // h
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kEmpty },    // g
-	{ CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // f
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // e
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid },  // d
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid },  // c
-	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // b
-	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // a
-#else
-	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // a
-	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // b
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid },  // c
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid },  // d
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // e
-	{ CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // f
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kEmpty },    // g
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2 },  // h
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2 },  // i
-#endif //ORIGIN_BOTTOM
-};
+    protected:
+      void DoApplyAction(Action action) override;
+      void ResetBoard();
 
-/// <summary>
-/// Hexagone board is represented by a square with some kInvalid case:
-/// 
-/// I     2 2 2 2 2
-/// H    2 2 2 2 2 2
-/// G   0 0 2 2 2 0 0
-/// F  0 0 0 0 0 0 0 0
-/// E 0 0 0 0 0 0 0 0 0
-/// D  0 0 0 0 0 0 0 0 \9
-/// C   0 0 1 1 1 0 0 \8
-/// B    1 1 1 1 1 1 \7
-/// A     1 1 1 1 1 \6
-///        \1\2\3\4\5
-/// 
-/// Square/Memory representation
-/// 
-/// I X X X X 2 2 2 2 2
-/// H X X X 2 2 2 2 2 2
-/// G X X 0 0 2 2 2 0 0
-/// F X 0 0 0 0 0 0 0 0
-/// E 0 0 0 0 0 0 0 0 0
-/// D 0 0 0 0 0 0 0 0 X
-/// C 0 0 1 1 1 0 0 X X
-/// B 1 1 1 1 1 1 X X X
-/// A 1 1 1 1 1 X X X X
-///   1 2 3 4 5 6 7 8 9
-/// </summary>
+      friend struct Move;
+    };
 
-// cf https://abaloneonline.wordpress.com/variations/the-classics/
-constexpr CellState ABALONE_INIT_BELGIAN_DAISY[kNumRows][kNumCols] = {
-	// 1				            2				              3				              4				              5				              6				              7				              8				              9
-#if ORIGIN_BOTTOM
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kPlayer1,	CellState::kPlayer1 },  // i
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1 },  // h
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty },    // g
-	{ CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // f
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // e
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid },  // d
-	{ CellState::kEmpty,	  CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid },  // c
-	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // b
-	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // a
-#else
-	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // a
-	{ CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid },  // b
-	{ CellState::kEmpty,	  CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kInvalid,	CellState::kInvalid },  // c
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kInvalid },  // d
-	{ CellState::kEmpty,	  CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // e
-	{ CellState::kInvalid,	CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty,		CellState::kEmpty },    // f
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kEmpty,		CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kPlayer1,	CellState::kPlayer1,	CellState::kEmpty },    // g
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kPlayer1,	CellState::kPlayer1,	CellState::kPlayer1 },  // h
-	{ CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kInvalid,	CellState::kPlayer2,	CellState::kPlayer2,	CellState::kEmpty,		CellState::kPlayer1,	CellState::kPlayer1 },  // i
-#endif //ORIGIN_BOTTOM
-};
+    // Game object.
+    class AbaloneGame : public Game
+    {
+    public:
+      explicit AbaloneGame(const GameParameters &params);
+      int NumDistinctActions() const override { return abalone_core::kNumCells * abalone_core::kNumActionsPerCell; }
+      std::unique_ptr<State> NewInitialState() const override;
+      int NumPlayers() const override { return abalone_core::kNumPlayers; }
+      double MinUtility() const override { return -1; }
+      absl::optional<double> UtilitySum() const override { return 0; }
+      double MaxUtility() const override { return 1; }
+      std::vector<int> ObservationTensorShape() const override
+      {
+        return {abalone_core::kNumPlayers + 1, abalone_core::kNumRows, abalone_core::kNumCols}; // status: empty, player1, player2
+      }
+      int MaxGameLength() const override { return abalone_core::kHistoryMax; }
+      std::string ActionToString(Player player, Action action_id) const override;
 
-constexpr std::pair<Direction, Direction> Sisters[] = {  // eq to dir+1 and dir+2
-	{ Direction::UP_RIGHT, Direction::UP_LEFT },  // Direction::RIGHT
-	{ Direction::UP_LEFT, Direction::LEFT },  // Direction::UP_RIGHT
-	{ Direction::LEFT, Direction::DOWN_LEFT },  // Direction::UP_LEFT
-	{ Direction::DOWN_LEFT, Direction::DOWN_RIGHT },  // Direction::LEFT
-	{ Direction::DOWN_RIGHT, Direction::RIGHT },  // Direction::DOWN_LEFT
-	{ Direction::RIGHT, Direction::UP_RIGHT },  // Direction::DOWN_RIGHT
-};
-static_assert(sizeof(Sisters) / sizeof(Sisters[0]) == Direction_Last, "mismatch size");
+    protected:
+      friend class AbaloneState;
 
-struct Coordinate {
-	int m_row;
-	int m_column;
+      // config
+      int m_marbles_to_win;
+      double m_marble_reward;
+      std::string m_init_board;
+      bool m_init_invert; // invert position of player 1 and 2
+    };
 
-	bool operator == (const Coordinate& other) const {
-		return m_row == other.m_row &&
-			m_column == other.m_column;
-	}
+    inline std::ostream &operator<<(std::ostream &stream, const abalone_core::CellState &state)
+    {
+      return stream << abalone_core::StateToString(state);
+    }
 
-	Coordinate operator + (const Coordinate& other) const {
-		Coordinate ret;
-		ret.m_row = m_row + other.m_row;
-		ret.m_column = m_column + other.m_column;
-		return ret;
-	}
-};
+    // other functions
+    std::pair<open_spiel::Action, float> AllAbaloneMoves_ABSpiel(const std::unique_ptr<State>& _state, int _depth, std::vector<std::pair<open_spiel::Action, float>>* all_moves=NULL);
 
-constexpr Coordinate Offsets[] = {
-#if ORIGIN_BOTTOM
-	// row, column
-	{ 0,  1 },  // Direction::RIGHT
-	{ -1,  1 },  // Direction.UP_RIGHT
-	{ -1,  0 },  // Direction.UP_LEFT
-	{ 0, -1 },  // Direction.LEFT
-	{ 1, -1 },  // Direction.DOWN_LEFT
-	{ 1,  0 },  // Direction.DOWN_RIGHT
-#else
-	// row, column
-	{ 0,  1 },  // Direction::RIGHT
-	{ 1,  1 },  // Direction.UP_RIGHT
-	{ 1,  0 },  // Direction.UP_LEFT
-	{ 0, -1 },  // Direction.LEFT
-	{ -1, -1 },  // Direction.DOWN_LEFT
-	{ -1,  0 },  // Direction.DOWN_RIGHT
-#endif //ORIGIN_BOTTOM
-};
-static_assert(sizeof(Offsets) / sizeof(Offsets[0]) == Direction_Last, "mismatch size");
+  } // namespace abalone
+} // namespace open_spiel
 
-
-// State of an in-play game.
-class AbaloneState : public State {
- public:
-  AbaloneState(std::shared_ptr<const Game> game);
-
-  AbaloneState(const AbaloneState&) = default;
-  AbaloneState& operator=(const AbaloneState&) = default;
-
-  Player CurrentPlayer() const override {
-    return IsTerminal() ? kTerminalPlayerId : current_player_;
-  }
-  std::string ActionToString(Player player, Action action_id) const override;
-  // Action StringToAction(Player player, const std::string& action_str) const override;
-
-  std::string ToString() const override;
-  bool IsTerminal() const override;
-  // std::vector<double> Rewards() const override;
-  std::vector<double> Returns() const override;
-  std::string InformationStateString(Player player) const override;
-  std::string ObservationString(Player player) const override;
-  void ObservationTensor(Player player,
-                         absl::Span<float> values) const override;
-  std::unique_ptr<State> Clone() const override;
-  std::vector<Action> LegalActions() const override;
-  void SetBoard(int row, int column, CellState state) {
-    board_[row * kNumCols + column] = state;
-  }
-  CellState BoardAt(int row, int column) const {
-    return board_[row * kNumCols + column];
-  }
-  Player outcome() const { return outcome_; }
-  virtual void UndoAction(Player player, Action action);
-
- protected:
-  std::array<CellState, kNumCells> board_;
-  void DoApplyAction(Action action) override;
-  void ResetBoard();
-
- private:
-  friend struct Move;
-  Player current_player_ = 0;         // Player zero goes first
-  Player outcome_ = kInvalidPlayer;   // winner
-  //int num_moves_ = 0;
-};
-
-// Game object.
-class AbaloneGame : public Game {
-	public:
-		explicit AbaloneGame(const GameParameters& params);
-		int NumDistinctActions() const override { return kNumCells*kNumActionsPerCell; }
-		std::unique_ptr<State> NewInitialState() const override;
-		int NumPlayers() const override { return kNumPlayers; }
-		double MinUtility() const override { return -1; }
-		absl::optional<double> UtilitySum() const override { return 0; }
-		double MaxUtility() const override { return 1; }
-		std::vector<int> ObservationTensorShape() const override {
-			return {kNumPlayers + 1, kNumRows, kNumCols};  // status: empty, player1, player2
-		}
-		int MaxGameLength() const override { return kHistoryMax; }
-		std::string ActionToString(Player player, Action action_id) const override;
-		//Action StringToAction(Player player, const std::string& action_str) const;
-
-	protected:
-		friend class AbaloneState;
-
-		// config
-		int m_marbles_to_win;
-		double m_marble_reward;
-		std::string m_init_board;
-		bool m_init_invert;  // invert position of player 1 and 2
-};
-
-CellState PlayerToState(Player player);
-std::string StateToString(CellState state);
-
-inline std::ostream& operator<<(std::ostream& stream, const CellState& state) {
-  return stream << StateToString(state);
-}
-
-}  // namespace abalone
-}  // namespace open_spiel
-
-#endif  // OPEN_SPIEL_GAMES_ABALONE_H_
+#endif // OPEN_SPIEL_GAMES_ABALONE_H_

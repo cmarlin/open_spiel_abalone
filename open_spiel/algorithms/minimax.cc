@@ -66,8 +66,8 @@ double _alpha_beta(State* state, int depth, double alpha, double beta,
     double value = -std::numeric_limits<double>::infinity();
 
     auto actions = state->LegalActions();
-    auto rng = std::default_random_engine {};
-    std::shuffle(std::begin(actions), std::end(actions), rng);
+    // auto rng = std::default_random_engine {};
+    // std::shuffle(std::begin(actions), std::end(actions), rng);
 
     for (Action action : actions) {
       // auto child_state = state->Clone();

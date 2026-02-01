@@ -1,6 +1,10 @@
 set(GAME_SOURCES
   abalone/abalone.cc
   abalone/abalone.h
+  abalone/abalone_core.h
+  abalone/abalone_core.cpp
+  abalone/abalone_core_ab.h
+  abalone/abalone_core_ab.cpp
   amazons/amazons.cc
   amazons/amazons.h
   backgammon/backgammon.cc
