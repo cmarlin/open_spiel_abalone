@@ -36,9 +36,10 @@ namespace abalone_core
 	constexpr int kHistoryMax = 200;  // a game coudn't last more than that
 	constexpr int kMarblesToWin = 6; // stop a game when one player lost this number of marbles (default:6 blitz:4)
 	constexpr double kMarbleReward = 0.1; // check that kMarblesToWin*kMarbleReward<1
-	constexpr int kCellStates = 2 + kNumPlayers; // empty, invalid, and players
+  constexpr int kCellStates = 2 + kNumPlayers; // empty, invalid, and players
 	const std::string kDefaultBoard = "classic"; // default board to play
-	constexpr bool kInvertBoard = false;         // invert player 1 and player 2 positions
+	constexpr bool kInvertBoard = false;  // invert player 1 and player 2 positions
+  constexpr bool kMarbleAdvantage = false;  // player with the most marbles wins at the end of game (instead draw)
 
 												 // State of a cell.
 	enum CellState : int8_t
@@ -137,8 +138,9 @@ namespace abalone_core
 
       inline CellState ToPlay() const { return CellState(turn_ % 2); }
       void Reset(const CellState _init_pattern[kNumRows][kNumCols] = ABALONE_INIT_CLASSIC);
+      // @param _marble_advantage : if no winner at the end of game winner is the player with advantage (i.e more marbles)
       // @return tuple<is_finished, new_outcome>
-      std::tuple<bool, CellState> Eval(int _marbles_to_win = kMarblesToWin, int _game_length = -1) const;
+      std::tuple<bool, CellState> Eval(int _marbles_to_win = kMarblesToWin, int _game_length = -1, bool _marble_advantage = false) const;
 
       friend struct Move;
 	};
@@ -167,7 +169,7 @@ namespace abalone_core
 
 		bool IsValid(const core_state& _state) const;
 
-		void Apply(core_state& _state, int marbles_to_win = kMarblesToWin, int game_length = kHistoryMax) const;
+		void Apply(core_state& _state, int _marbles_to_win = kMarblesToWin, int _game_length = kHistoryMax, bool _marble_advantage = false) const;
 
 		std::string ToString() const;
 

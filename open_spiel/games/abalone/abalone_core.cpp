@@ -85,7 +85,7 @@ namespace abalone_core
 				board_[j][i] = _init_pattern[j][i];
 	}
 
-	std::tuple<bool, CellState> core_state::Eval(int _marbles_to_win, int _game_length) const
+	std::tuple<bool, CellState> core_state::Eval(int _marbles_to_win, int _game_length, bool _marble_advantage) const
 	{
 		if (outcome_ != CellState::Invalid) {
 			return std::make_tuple(true, outcome_);
@@ -116,11 +116,22 @@ namespace abalone_core
 				return std::make_tuple(true, CellState::Player1);
 		}
 
-		if (_game_length > 0)
-		{
-			if (turn_ >= _game_length)
-				return std::make_tuple(true, CellState::Empty);
-		}
+    if (_game_length > 0 && turn_ >= _game_length)
+    {
+      if (_marble_advantage)
+      {
+        if(ballCount[0]==ballCount[1])
+          return std::make_tuple(true, CellState::Empty);
+        else if (ballCount[1] == min_balls)
+          return std::make_tuple(true, CellState::Player0);
+        else
+          return std::make_tuple(true, CellState::Player1);
+      }
+      else
+      {
+        return std::make_tuple(true, CellState::Empty);
+      }
+    }
 
 		return std::make_tuple(false, CellState::Invalid);
 	}
@@ -333,7 +344,7 @@ namespace abalone_core
 		}
 	}
 
-	void Move::Apply(core_state& _state, int marbles_to_win, int game_length) const
+	void Move::Apply(core_state& _state, int _marbles_to_win, int _game_length, bool _marble_advantage) const
 	{
 		auto offset = Offsets[m_direction];
 		auto vr = m_end.m_row - m_start.m_row;
@@ -348,7 +359,7 @@ namespace abalone_core
 			_ApplySingleMove(_state, offset.m_row, offset.m_column);
 		}
 		_state.turn_ ++;
-		_state.outcome_ = std::get<1>(_state.Eval(marbles_to_win, game_length));
+		_state.outcome_ = std::get<1>(_state.Eval(_marbles_to_win, _game_length, _marble_advantage));
 
 		// _state.m_turn += 1;
 		// auto eval = Eval(_state);

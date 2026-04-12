@@ -47,8 +47,9 @@ const GameType kGameType{
     /*parameter_specification=*/{
       {"marbles_to_win", GameParameter(abalone_core::kMarblesToWin)},
       {"marble_reward", GameParameter(abalone_core::kMarbleReward)},
-	  {"board", GameParameter(abalone_core::kDefaultBoard)},
-	  {"invert", GameParameter(abalone_core::kInvertBoard)}
+      {"marble_advantage", GameParameter(abalone_core::kMarbleAdvantage)},
+	    {"board", GameParameter(abalone_core::kDefaultBoard)},
+	    {"invert", GameParameter(abalone_core::kInvertBoard)}
     }  // no parameters
 };
 
@@ -79,7 +80,7 @@ void AbaloneState::DoApplyAction(Action action) {
   // update board state
   abalone_core::Move move = abalone_core::Move::ActionToMove(action);
   if(move.IsValid(this->core_state_)) {
-    move.Apply(this->core_state_, up_game.m_marbles_to_win, abalone_core::kHistoryMax);
+    move.Apply(this->core_state_, up_game.m_marbles_to_win, abalone_core::kHistoryMax, up_game.m_marble_advantage);
   }
   else {
     core_state_.outcome_ = static_cast<abalone_core::CellState>(1 - core_state_.ToPlay());
@@ -126,7 +127,7 @@ void AbaloneState::ResetBoard(){
   {
     init_board = abalone_core::ABALONE_INIT_CLASSIC;
   }
-  else if(up_game.m_init_board.compare("belgian_daisy")==0)
+  else if(up_game.m_init_board.compare("belgian-daisy")==0)
   {
     init_board = abalone_core::ABALONE_INIT_BELGIAN_DAISY;
   } else {
@@ -349,7 +350,8 @@ AbaloneGame::AbaloneGame(const GameParameters& params)
   m_marbles_to_win = ParameterValue<int>("marbles_to_win");
   m_marble_reward = ParameterValue<double>("marble_reward");
   m_init_board = ParameterValue<std::string>("board");
-  m_init_invert = ParameterValue<bool>("invert"); 
+  m_init_invert = ParameterValue<bool>("invert");
+  m_marble_advantage = ParameterValue<bool>("marble_advantage");
 }
 
 std::pair<open_spiel::Action, float> AllAbaloneMoves_ABSpiel(const std::unique_ptr<State>& _state, int _depth, std::vector<std::pair<open_spiel::Action, float>>* all_moves)

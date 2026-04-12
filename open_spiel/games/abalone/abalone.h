@@ -94,6 +94,7 @@ namespace open_spiel
 
       // config
       int m_marbles_to_win;
+      bool m_marble_advantage;
       double m_marble_reward;
       std::string m_init_board;
       bool m_init_invert; // invert position of player 1 and 2
