@@ -415,7 +415,7 @@ void DatasetAbalone()
   // data_logger.Write(record);
 }
 
-void MakeRollout(int p0_depth = 2, int p1_depth = 2)
+void MakeRollout(int p0_depth = 2, int p1_depth = 2, const char* init = NULL)
 {
 	//auto kSeed = 42;
 	//std::time_t result = std::time(nullptr);
@@ -424,8 +424,24 @@ void MakeRollout(int p0_depth = 2, int p1_depth = 2)
 
 	auto rollout = std::string();
 	abalone_core::core_state state;
-	state.Reset(abalone_core::ABALONE_INIT_CLASSIC);
-	//state.reset(ABALONE_INIT_BELGIAN_DAISY);
+  auto init_pattern = abalone_core::ABALONE_INIT_CLASSIC;
+  if(init!=NULL)
+  {
+    if(std::string(init) == "belgian-daisy")
+    {
+      init_pattern = abalone_core::ABALONE_INIT_BELGIAN_DAISY;
+    }
+    else if(std::string(init) == "classic")
+    {
+      init_pattern = abalone_core::ABALONE_INIT_CLASSIC;
+    }
+    else
+    {
+      std::cerr << "unknown init board" << std::endl;
+    }
+  }
+	state.Reset(init_pattern);
+	//state.reset();
 	while (state.outcome_ == abalone_core::CellState::Invalid)
 	{
 		auto current_player = state.ToPlay();
@@ -461,6 +477,7 @@ int main(int argc, char **argv) {
 
   int p0_depth = 2;
   int p1_depth = 2;
+  const char* init_board = NULL;
   if(argc>1)
   {
     p0_depth = atoi(argv[1]);
@@ -469,6 +486,10 @@ int main(int argc, char **argv) {
   {
     p1_depth = atoi(argv[2]);
   }
-  open_spiel::MakeRollout(p0_depth, p1_depth);
+  if(argc>3)
+  {
+    init_board = argv[3];
+  }
+  open_spiel::MakeRollout(p0_depth, p1_depth, init_board);
 }
 
