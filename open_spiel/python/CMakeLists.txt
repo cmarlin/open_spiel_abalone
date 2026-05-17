@@ -83,6 +83,8 @@ set(PYTHON_BINDINGS ${PYTHON_BINDINGS}
   pybind11/algorithms_trajectories.h
   pybind11/bots.cc
   pybind11/bots.h
+  pybind11/games_abalone.cc
+  pybind11/games_abalone.h
   pybind11/games_backgammon.cc
   pybind11/games_backgammon.h
   pybind11/games_bargaining.cc

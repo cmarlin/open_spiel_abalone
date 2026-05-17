@@ -404,5 +404,13 @@ std::pair<open_spiel::Action, float> AllAbaloneMoves_ABSpiel(const std::unique_p
   return std::make_pair(best_action, best_value);
 }
 
+Action AbaloneAB(const State& state, int depth) {
+  if (const auto* stt = dynamic_cast<const abalone::AbaloneState*>(&state)) {
+    auto best_move = abalone_core::AlphaBeta(stt->core_state_, depth);
+    return static_cast<Action>(best_move.first);
+  }
+  return static_cast<Action>(-1);
+}
+
 }  // namespace abalone
 }  // namespace open_spiel

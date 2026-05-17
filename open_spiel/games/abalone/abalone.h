@@ -24,10 +24,12 @@
 #include "open_spiel/spiel.h"
 #include "abalone_core.h"
 
-
-// Parameters: none
-// marbles_to_win
-// initital_board
+// Game of abalone where you have to push marbles to throw away opponent's ones.
+// Parameters:
+//  "marbles_to_win"    int       marble's count to remove from board         (default = 6)
+//  "board"             string    initial's board setup                       (default = "classic")
+//  "invert"            bool      invert player's positions                   (default = false)
+//  "marble_advantage"  bool      if game ends, winner based on most removed marbles (default = false)
 
 namespace open_spiel
 {
@@ -107,6 +109,8 @@ namespace open_spiel
 
     // other functions
     std::pair<open_spiel::Action, float> AllAbaloneMoves_ABSpiel(const std::unique_ptr<State>& _state, int _depth, std::vector<std::pair<open_spiel::Action, float>>* all_moves=NULL);
+
+    Action AbaloneAB(const State& state, int depth);
 
   } // namespace abalone
 } // namespace open_spiel
