@@ -16,13 +16,14 @@
 
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "open_spiel/algorithms/minimax.h"
 #include "open_spiel/spiel_utils.h"
 #include "open_spiel/utils/tensor_view.h"
-#include "abalone_core_ab.h"
+#include "abalone/abalone_core_ab.h"
 
 
 namespace open_spiel {
@@ -48,8 +49,8 @@ const GameType kGameType{
       {"marbles_to_win", GameParameter(abalone_core::kMarblesToWin)},
       {"marble_reward", GameParameter(abalone_core::kMarbleReward)},
       {"marble_advantage", GameParameter(abalone_core::kMarbleAdvantage)},
-	    {"board", GameParameter(abalone_core::kDefaultBoard)},
-	    {"invert", GameParameter(abalone_core::kInvertBoard)}
+      {"board", GameParameter(abalone_core::kDefaultBoard)},
+      {"invert", GameParameter(abalone_core::kInvertBoard)}
     }  // no parameters
 };
 
@@ -74,20 +75,20 @@ void AbaloneState::UndoAction(Player player, Action action) {
 }
 
 void AbaloneState::DoApplyAction(Action action) {
-  //SPIEL_CHECK_EQ(board_[move], CellState::Empty);
+  // SPIEL_CHECK_EQ(board_[move], CellState::Empty);
   const auto &up_game = static_cast<const AbaloneGame&>(*this->game_);
 
   // update board state
   abalone_core::Move move = abalone_core::Move::ActionToMove(action);
-  if(move.IsValid(this->core_state_)) {
-    move.Apply(this->core_state_, up_game.m_marbles_to_win, abalone_core::kHistoryMax, up_game.m_marble_advantage);
-  }
-  else {
-    core_state_.outcome_ = static_cast<abalone_core::CellState>(1 - core_state_.ToPlay());
+  if (move.IsValid(this->core_state_)) {
+    move.Apply(this->core_state_, up_game.m_marbles_to_win,
+               abalone_core::kHistoryMax, up_game.m_marble_advantage);
+  } else {
+    core_state_.outcome_ =
+        static_cast<abalone_core::CellState>(1 - core_state_.ToPlay());
     return;
   }
-  // moveStruct.Apply();
-  //board_[move] = PlayerToState(CurrentPlayer());
+  // board_[move] = PlayerToState(CurrentPlayer());
 
   // test game winner
   // if (HasLine(current_player_)) {
@@ -98,7 +99,8 @@ void AbaloneState::DoApplyAction(Action action) {
   //   core_state_.outcome_ = core_state_.to_play();
   // }
   // update step
-  //core_state_.current_player_ = static_cast<abalone_core::CellState>(1 - core_state_.current_player_);
+  // core_state_.current_player_ =
+  //     static_cast<abalone_core::CellState>(1 - core_state_.current_player_);
   // num_moves_ += 1;
 }
 
@@ -120,45 +122,41 @@ std::string AbaloneState::ActionToString(Player player,
   return game_->ActionToString(player, action_id);
 }
 
-void AbaloneState::ResetBoard(){
+void AbaloneState::ResetBoard() {
   const auto &up_game = static_cast<const AbaloneGame&>(*this->game_);
   auto init_board = abalone_core::ABALONE_INIT_CLASSIC;
-  if(up_game.m_init_board.compare("classic")==0)
-  {
+  if (up_game.m_init_board.compare("classic") == 0) {
     init_board = abalone_core::ABALONE_INIT_CLASSIC;
-  }
-  else if(up_game.m_init_board.compare("belgian-daisy")==0)
-  {
+  } else if (up_game.m_init_board.compare("belgian-daisy") == 0) {
     init_board = abalone_core::ABALONE_INIT_BELGIAN_DAISY;
   } else {
-    SpielFatalError(absl::StrCat("board init not found: ", up_game.m_init_board));
+    SpielFatalError(
+        absl::StrCat("board init not found: ", up_game.m_init_board));
   }
-  
 
-  auto invert_board = [invert=up_game.m_init_invert](abalone_core::CellState c){
-	if(invert && c==abalone_core::CellState::Player0)
-		return abalone_core::CellState::Player1;
-	if(invert && c==abalone_core::CellState::Player1)
-		return abalone_core::CellState::Player0;
-	return c;
+  auto invert_board = [invert = up_game.m_init_invert](
+      abalone_core::CellState c) {
+    if (invert && c == abalone_core::CellState::Player0)
+      return abalone_core::CellState::Player1;
+    if (invert && c == abalone_core::CellState::Player1)
+      return abalone_core::CellState::Player0;
+    return c;
   };
-  
+
   core_state_.Reset();
 
   // we need to reset board with invert
-  for(int r=0; r<abalone_core::kNumRows; r++)
-  {
-    for(int c=0; c<abalone_core::kNumCols; c++)
-    {
+  for (int r = 0; r < abalone_core::kNumRows; r++) {
+    for (int c = 0; c < abalone_core::kNumCols; c++) {
       core_state_.board_[r][c] = invert_board(init_board[r][c]);
     }
   }
 }
 
-Action AbaloneState::StringToAction(Player player, const std::string& action_str) const {
+Action AbaloneState::StringToAction(Player player,
+                                    const std::string& action_str) const {
   auto maybe_move = abalone_core::Move::FromString(action_str);
-  if(std::get<0>(maybe_move))
-  {
+  if (std::get<0>(maybe_move)) {
     return abalone_core::Move::MoveToAction(std::get<1>(maybe_move));
   }
 
@@ -173,11 +171,10 @@ AbaloneState::AbaloneState(std::shared_ptr<const Game> game) : State(game) {
 std::string AbaloneState::ToString() const {
   std::string str;
   absl::StrAppend(&str, "board = \n");
-  auto display_line = [&](std::string prefix, int line, int start, int end, std::string postfix)
-  {
+  auto display_line = [&](std::string prefix, int line, int start, int end,
+                          std::string postfix) {
     absl::StrAppend(&str, prefix);
-    for (auto i = start; i < end; ++i)
-    {
+    for (auto i = start; i < end; ++i) {
       absl::StrAppend(&str, "   ");
       absl::StrAppend(&str, StateToString(core_state_.board_[line][i]));
     }
@@ -185,14 +182,14 @@ std::string AbaloneState::ToString() const {
     absl::StrAppend(&str, "\n");
   };
   display_line("<i>        ", 8, 4, 9, "");
-	display_line("<h>      ", 7, 3, 9, "");
-	display_line("<g>    ", 6, 2, 9, "");
-	display_line("<f>  ", 5, 1, 9, "");
-	display_line("<e>", 4, 0, 9, "");
-	display_line("<d>  ", 3, 0, 8, "  <9>");
-	display_line("<c>    ", 2, 0, 7, "  <8>");
-	display_line("<b>      ", 1, 0, 6, "  <7>");
-	display_line("<a>        ", 0, 0, 5, "  <6>");
+  display_line("<h>      ", 7, 3, 9, "");
+  display_line("<g>    ", 6, 2, 9, "");
+  display_line("<f>  ", 5, 1, 9, "");
+  display_line("<e>", 4, 0, 9, "");
+  display_line("<d>  ", 3, 0, 8, "  <9>");
+  display_line("<c>    ", 2, 0, 7, "  <8>");
+  display_line("<b>      ", 1, 0, 6, "  <7>");
+  display_line("<a>        ", 0, 0, 5, "  <6>");
 
   absl::StrAppend(&str, "               <1> <2> <3> <4> <5>\n");
 
@@ -226,50 +223,44 @@ std::string AbaloneState::ToString() const {
 }
 
 bool AbaloneState::IsTerminal() const {
-  return core_state_.outcome_ != abalone_core::CellState::Invalid || move_number_ >= abalone_core::kHistoryMax;
+  return core_state_.outcome_ != abalone_core::CellState::Invalid ||
+         move_number_ >= abalone_core::kHistoryMax;
 }
 
 // std::vector<double> AbaloneState::Rewards() const {
 // }
 
 std::vector<double> AbaloneState::Returns() const {
-  if (core_state_.outcome_ != abalone_core::CellState::Invalid)  // set by invalid move
-  {
+  // set by invalid move
+  if (core_state_.outcome_ != abalone_core::CellState::Invalid) {
     if (core_state_.outcome_ == abalone_core::CellState::Player0)
       return {1.0, -1.0};
     if (core_state_.outcome_ == abalone_core::CellState::Player1)
       return {-1.0, 1.0};
   }
   int ballCount[2] = { 0, 0 };
-  for (int line = 0; line < abalone_core::kNumRows; ++line)
-  {
-    for (int column = 0; column < abalone_core::kNumCols; ++column)
-    {
+  for (int line = 0; line < abalone_core::kNumRows; ++line) {
+    for (int column = 0; column < abalone_core::kNumCols; ++column) {
       auto slot = core_state_.board_[line][column];
-      if (slot == abalone_core::CellState::Player0)
-      {
+      if (slot == abalone_core::CellState::Player0) {
         ballCount[0]++;
-      }
-      else if (slot == abalone_core::CellState::Player1)
-      {
+      } else if (slot == abalone_core::CellState::Player1) {
         ballCount[1]++;
       }
     }
   }
 
   const auto &up_game = static_cast<const AbaloneGame&>(*GetGame());
-  if (ballCount[0] <= 14 - up_game.m_marbles_to_win)
-  {
+  if (ballCount[0] <= 14 - up_game.m_marbles_to_win) {
     return {-1.0, 1.0};
   }
-  if (ballCount[1] <= 14 - up_game.m_marbles_to_win)
-  {
+  if (ballCount[1] <= 14 - up_game.m_marbles_to_win) {
     return {1.0, -1.0};
-    // (ballCount[0]>ballCount[1])      
-    // if (ballCount[1]>ballCount[0])      
+    // (ballCount[0]>ballCount[1])
+    // if (ballCount[1]>ballCount[0])
     // return {0.0, 0.0};
   }
-  //return {0.0, 0.0};
+  // return {0.0, 0.0};
   const double marble_reward = up_game.m_marble_reward;
   auto marble_balance = (14-ballCount[1])-(14-ballCount[0]);
   return {marble_balance*marble_reward, -marble_balance*marble_reward};
@@ -293,13 +284,15 @@ void AbaloneState::ObservationTensor(Player player,
   SPIEL_CHECK_LT(player, num_players_);
 
   // Treat `values` as a 3-d tensor.
-  TensorView<3> view(values, {abalone_core::kNumPlayers + 1, abalone_core::kNumRows, abalone_core::kNumCols}, true);
+  TensorView<3> view(values,
+                     {abalone_core::kNumPlayers + 1, abalone_core::kNumRows,
+                      abalone_core::kNumCols},
+                     true);
 
   // encode current player's observation to be at the same layer
   auto player1_index = 0;
   auto player2_index = 0;
-  switch(player)
-  {
+  switch (player) {
     case abalone_core::CellState::Player0:
       player1_index = 1;
       player2_index = 2;
@@ -313,7 +306,7 @@ void AbaloneState::ObservationTensor(Player player,
   for (int row = 0; row < abalone_core::kNumRows; ++row) {
     for (int col = 0; col < abalone_core::kNumCols; ++col) {
       auto index = 0;
-      switch(core_state_.board_[row][col]){
+      switch (core_state_.board_[row][col]) {
         case abalone_core::CellState::Invalid:
           continue;
         case abalone_core::CellState::Empty:
@@ -354,54 +347,65 @@ AbaloneGame::AbaloneGame(const GameParameters& params)
   m_marble_advantage = ParameterValue<bool>("marble_advantage");
 }
 
-std::pair<open_spiel::Action, float> AllAbaloneMoves_ABSpiel(const std::unique_ptr<State>& _state, int _depth, std::vector<std::pair<open_spiel::Action, float>>* all_moves)
-{
+std::pair<open_spiel::Action, float> AllAbaloneMoves_ABSpiel(
+    const std::unique_ptr<State>& _state, int _depth,
+    std::vector<std::pair<open_spiel::Action, float>>* all_moves) {
   auto game = _state->GetGame();
   Player player = _state->CurrentPlayer();
   auto best_value = -1.001f;
   open_spiel::Action best_action = -1;
   std::vector<std::pair<open_spiel::Action, float>> children;
-  for(auto action: _state->LegalActions())
-  {
+  for (auto action : _state->LegalActions()) {
     auto childstate = _state->Child(action);
-    if(childstate.get()->IsTerminal())
-    {
+    if (childstate.get()->IsTerminal()) {
       auto q_value = childstate->Returns()[player];
-      if(q_value>best_value)
-      {
+      if (q_value > best_value) {
         best_action = action;
         best_value = q_value;
       }
-      if(all_moves)
-      {
+      if (all_moves) {
         all_moves->push_back(std::make_pair(action, q_value));
       }
       continue;
     }
 
-    auto core_player = reinterpret_cast<const abalone::AbaloneState*>(childstate.get())->core_state_.ToPlay();
+    auto core_player = reinterpret_cast<const abalone::AbaloneState*>(
+        childstate.get())->core_state_.ToPlay();
     std::pair<double, Action> value_action = algorithms::AlphaBetaSearch(
       *game,
       childstate.get(),
       [core_player](const State& state) {
-          auto abalone_state = reinterpret_cast<const abalone::AbaloneState&>(state);
-          return abalone_core::Heuristic(abalone_state.core_state_, core_player) * 0.001;
+          const auto& abalone_state =
+              reinterpret_cast<const abalone::AbaloneState&>(state);
+          return abalone_core::Heuristic(
+              abalone_state.core_state_, core_player) * 0.001;
           },
       _depth-1,
       childstate.get()->CurrentPlayer());
     float q_value = -value_action.first;
-    if(q_value>best_value)
-    {
+    if (q_value > best_value) {
       best_action = action;
       best_value = q_value;
     }
-    if(all_moves)
-    {
+    if (all_moves) {
       all_moves->push_back(std::make_pair(action, q_value));
     }
   }
-  // auto max_move = *std::max_element(all_moves->begin(), all_moves->end(), [](const auto& m1, const auto& m2){return m1.second<m2.second;});
+  // auto max_move = *std::max_element(
+  //     all_moves->begin(), all_moves->end(),
+  //     [](const auto& m1, const auto& m2) {
+  //       return m1.second < m2.second;
+  //     });
   return std::make_pair(best_action, best_value);
+}
+
+int AbaloneHeuristic(const State& state) {
+  if (const auto* stt = dynamic_cast<const abalone::AbaloneState*>(&state)) {
+    auto core_stt = stt->core_state_;
+    return Heuristic(core_stt, core_stt.ToPlay());
+  }
+  SpielFatalError("state is not AbaloneState");
+  return 0;
 }
 
 Action AbaloneAB(const State& state, int depth) {
@@ -409,6 +413,7 @@ Action AbaloneAB(const State& state, int depth) {
     auto best_move = abalone_core::AlphaBeta(stt->core_state_, depth);
     return static_cast<Action>(best_move.first);
   }
+  SpielFatalError("state is not AbaloneState");
   return static_cast<Action>(-1);
 }
 

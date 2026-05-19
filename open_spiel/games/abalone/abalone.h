@@ -12,107 +12,113 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OPEN_SPIEL_GAMES_ABALONE_H_
-#define OPEN_SPIEL_GAMES_ABALONE_H_
+#ifndef OPEN_SPIEL_GAMES_ABALONE_ABALONE_H_
+#define OPEN_SPIEL_GAMES_ABALONE_ABALONE_H_
 
 #include <array>
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "open_spiel/spiel.h"
-#include "abalone_core.h"
+#include "open_spiel/games/abalone/abalone_core.h"
 
 // Game of abalone where you have to push marbles to throw away opponent's ones.
 // Parameters:
-//  "marbles_to_win"    int       marble's count to remove from board         (default = 6)
-//  "board"             string    initial's board setup                       (default = "classic")
-//  "invert"            bool      invert player's positions                   (default = false)
-//  "marble_advantage"  bool      if game ends, winner based on most removed marbles (default = false)
+//  "marbles_to_win"   int    marble count to remove from board (default = 6)
+//  "board"            string initial board setup (default = "classic")
+//  "invert"           bool   invert player positions (default = false)
+//  "marble_advantage" bool   if game ends, winner based on most
+//                            removed marbles (default = false)
 
-namespace open_spiel
-{
+namespace open_spiel {
 
-  namespace abalone
-  {
-    // State of an in-play game.
-    class AbaloneState : public State
-    {
-    public:
-      AbaloneState(std::shared_ptr<const Game> game);
+namespace abalone {
 
-      AbaloneState(const AbaloneState &) = default;
-      AbaloneState &operator=(const AbaloneState &) = default;
+// State of an in-play game.
+class AbaloneState : public State {
+ public:
+  explicit AbaloneState(std::shared_ptr<const Game> game);
 
-      Player CurrentPlayer() const override
-      {
-        return IsTerminal() ? kTerminalPlayerId : core_state_.ToPlay();
-      }
-      std::string ActionToString(Player player, Action action_id) const override;
-      Action StringToAction(Player player, const std::string& action_str) const override;
+  AbaloneState(const AbaloneState &) = default;
+  AbaloneState &operator=(const AbaloneState &) = default;
 
-      std::string ToString() const override;
-      bool IsTerminal() const override;
-      // std::vector<double> Rewards() const override;
-      std::vector<double> Returns() const override;
-      std::string InformationStateString(Player player) const override;
-      std::string ObservationString(Player player) const override;
-      void ObservationTensor(Player player,
-                             absl::Span<float> values) const override;
-      std::unique_ptr<State> Clone() const override;
-      std::vector<Action> LegalActions() const override;
-      virtual void UndoAction(Player player, Action action);
+  Player CurrentPlayer() const override {
+    return IsTerminal() ? kTerminalPlayerId : core_state_.ToPlay();
+  }
+  std::string ActionToString(Player player, Action action_id) const override;
+  Action StringToAction(Player player,
+                        const std::string& action_str) const override;
 
-      abalone_core::core_state core_state_;
+  std::string ToString() const override;
+  bool IsTerminal() const override;
+  // std::vector<double> Rewards() const override;
+  std::vector<double> Returns() const override;
+  std::string InformationStateString(Player player) const override;
+  std::string ObservationString(Player player) const override;
+  void ObservationTensor(Player player,
+                          absl::Span<float> values) const override;
+  std::unique_ptr<State> Clone() const override;
+  std::vector<Action> LegalActions() const override;
+  virtual void UndoAction(Player player, Action action);
 
-    protected:
-      void DoApplyAction(Action action) override;
-      void ResetBoard();
+  abalone_core::core_state core_state_;
 
-      friend struct Move;
-    };
+ protected:
+  void DoApplyAction(Action action) override;
+  void ResetBoard();
 
-    // Game object.
-    class AbaloneGame : public Game
-    {
-    public:
-      explicit AbaloneGame(const GameParameters &params);
-      int NumDistinctActions() const override { return abalone_core::kNumCells * abalone_core::kNumActionsPerCell; }
-      std::unique_ptr<State> NewInitialState() const override;
-      int NumPlayers() const override { return abalone_core::kNumPlayers; }
-      double MinUtility() const override { return -1; }
-      absl::optional<double> UtilitySum() const override { return 0; }
-      double MaxUtility() const override { return 1; }
-      std::vector<int> ObservationTensorShape() const override
-      {
-        return {abalone_core::kNumPlayers + 1, abalone_core::kNumRows, abalone_core::kNumCols}; // status: empty, player1, player2
-      }
-      int MaxGameLength() const override { return abalone_core::kHistoryMax; }
-      std::string ActionToString(Player player, Action action_id) const override;
+  friend struct Move;
+};
 
-    protected:
-      friend class AbaloneState;
+// Game object.
+class AbaloneGame : public Game {
+ public:
+  explicit AbaloneGame(const GameParameters &params);
+  int NumDistinctActions() const override {
+    return abalone_core::kNumCells * abalone_core::kNumActionsPerCell;
+  }
+  std::unique_ptr<State> NewInitialState() const override;
+  int NumPlayers() const override { return abalone_core::kNumPlayers; }
+  double MinUtility() const override { return -1; }
+  absl::optional<double> UtilitySum() const override { return 0; }
+  double MaxUtility() const override { return 1; }
+  std::vector<int> ObservationTensorShape() const override {
+    // status: empty, player1, player2
+    return {abalone_core::kNumPlayers + 1, abalone_core::kNumRows,
+            abalone_core::kNumCols};
+  }
+  int MaxGameLength() const override { return abalone_core::kHistoryMax; }
+  std::string ActionToString(Player player, Action action_id) const override;
 
-      // config
-      int m_marbles_to_win;
-      bool m_marble_advantage;
-      double m_marble_reward;
-      std::string m_init_board;
-      bool m_init_invert; // invert position of player 1 and 2
-    };
+ protected:
+  friend class AbaloneState;
 
-    inline std::ostream &operator<<(std::ostream &stream, const abalone_core::CellState &state)
-    {
-      return stream << abalone_core::StateToString(state);
-    }
+  // config
+  int m_marbles_to_win;
+  bool m_marble_advantage;
+  double m_marble_reward;
+  std::string m_init_board;
+  bool m_init_invert;  // invert position of player 1 and 2
+};
 
-    // other functions
-    std::pair<open_spiel::Action, float> AllAbaloneMoves_ABSpiel(const std::unique_ptr<State>& _state, int _depth, std::vector<std::pair<open_spiel::Action, float>>* all_moves=NULL);
+inline std::ostream& operator<<(std::ostream& stream,
+                                const abalone_core::CellState& state) {
+  return stream << abalone_core::StateToString(state);
+}
 
-    Action AbaloneAB(const State& state, int depth);
+// other functions
+int AbaloneHeuristic(const State& state);
 
-  } // namespace abalone
-} // namespace open_spiel
+std::pair<open_spiel::Action, float> AllAbaloneMoves_ABSpiel(
+    const std::unique_ptr<State>& _state, int _depth,
+    std::vector<std::pair<open_spiel::Action, float>>* all_moves = nullptr);
 
-#endif // OPEN_SPIEL_GAMES_ABALONE_H_
+Action AbaloneAB(const State& state, int depth);
+
+}  // namespace abalone
+}  // namespace open_spiel
+
+#endif  // OPEN_SPIEL_GAMES_ABALONE_ABALONE_H_

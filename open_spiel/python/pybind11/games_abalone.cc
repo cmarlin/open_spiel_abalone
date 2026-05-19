@@ -24,9 +24,16 @@ namespace py = ::pybind11;
 void init_pyspiel_abalone(::pybind11::module& m) {
   py::module_ abalone = m.def_submodule("abalone");
 
-  abalone.def("alpha_beta", &abalone::AbaloneAB, py::arg("state"),
-              py::arg("depth"),
-              "Run alpha-beta search and return the best action id.");
+  abalone.def("heuristic",
+    &abalone::AbaloneHeuristic,
+    py::arg("state"),
+    "Heuristic for state evaluation");
+  
+  abalone.def("alpha_beta",
+    &abalone::AbaloneAB,
+    py::arg("state"),
+    py::arg("depth"),
+    "Run alpha-beta search and return the best action id.");
 }
 
 }  // namespace open_spiel
