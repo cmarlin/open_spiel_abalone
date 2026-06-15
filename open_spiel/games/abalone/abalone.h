@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "open_spiel/spiel.h"
+#include "open_spiel/algorithms/mcts.h"
 #include "open_spiel/games/abalone/abalone_core.h"
 
 // Game of abalone where you have to push marbles to throw away opponent's ones.
@@ -109,9 +110,18 @@ inline std::ostream& operator<<(std::ostream& stream,
   return stream << abalone_core::StateToString(state);
 }
 
-// other functions
-int AbaloneHeuristic(const State& state);
+class AbaloneEvaluator : public open_spiel::algorithms::Evaluator {
+ public:
+  explicit AbaloneEvaluator() {}
 
+  // Runs random games, returning the average returns.
+  std::vector<double> Evaluate(const State& state) override;
+
+  // Returns equal probability for each action.
+  ActionsAndProbs Prior(const State& state) override;
+};
+
+// other functions
 std::pair<open_spiel::Action, float> AllAbaloneMoves_ABSpiel(
     const std::unique_ptr<State>& _state, int _depth,
     std::vector<std::pair<open_spiel::Action, float>>* all_moves = nullptr);

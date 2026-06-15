@@ -87,38 +87,6 @@ std::pair<abalone_core::core_Action, float> _LogAB(
   return best_move;
 }
 
-class AbaloneHeuristicEvaluator : public open_spiel::algorithms::Evaluator {
- public:
-  explicit AbaloneHeuristicEvaluator() {}
-
-  // Runs random games, returning the average returns.
-  std::vector<double> Evaluate(const State& state) override {
-    auto abalone_state = reinterpret_cast<const abalone::AbaloneState&>(state);
-    auto core_player = abalone_state.core_state_.ToPlay();
-    auto score =
-        abalone_core::Heuristic(abalone_state.core_state_, core_player)
-        * 0.001;
-    std::vector<double> returns = {score, -score};
-    return returns;
-  }
-
-  // Returns equal probability for each action.
-  ActionsAndProbs Prior(const State& state) override {
-    // Returns equal probability for all actions.
-    if (state.IsChanceNode()) {
-      return state.ChanceOutcomes();
-    } else {
-      std::vector<Action> legal_actions = state.LegalActions();
-      ActionsAndProbs prior;
-      prior.reserve(legal_actions.size());
-      for (const Action& action : legal_actions) {
-        prior.emplace_back(action, 1.0 / legal_actions.size());
-      }
-      return prior;
-    }
-  }
-};
-
 void _LogMCTS(std::unique_ptr<State>& state) {
   auto game = state->GetGame();
   auto evaluator =

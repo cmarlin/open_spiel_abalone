@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OPEN_SPIEL_GAMES_ABALONE_ABALONE_PYBIND11_H_
-#define OPEN_SPIEL_GAMES_ABALONE_ABALONE_PYBIND11_H_
+#ifndef OPEN_SPIEL_PYTHON_PYBIND11_GAMES_ABALONE_H_
+#define OPEN_SPIEL_PYTHON_PYBIND11_GAMES_ABALONE_H_
 
 #include "open_spiel/python/pybind11/pybind11.h"
 
@@ -21,4 +21,4 @@ namespace open_spiel {
 void init_pyspiel_abalone(::pybind11::module& m);
 }  // namespace open_spiel
 
-#endif  // OPEN_SPIEL_GAMES_ABALONE_ABALONE_PYBIND11_H_
+#endif  // OPEN_SPIEL_PYTHON_PYBIND11_GAMES_ABALONE_H_

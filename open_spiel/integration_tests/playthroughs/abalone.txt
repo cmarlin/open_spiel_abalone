@@ -19,7 +19,7 @@ GameType.utility = Utility.ZERO_SUM
 NumDistinctActions() = 2430
 PolicyTensorShape() = [2430]
 MaxChanceOutcomes() = 0
-GetParameters() = {board=classic,invert=False,marble_advantage=false,marble_reward=0.1,marbles_to_win=6}
+GetParameters() = {board=classic,invert=False,marble_advantage=False,marble_reward=0.1,marbles_to_win=6}
 NumPlayers() = 2
 MinUtility() = -1.0
 MaxUtility() = 1.0

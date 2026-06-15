@@ -24,11 +24,13 @@ namespace py = ::pybind11;
 void init_pyspiel_abalone(::pybind11::module& m) {
   py::module_ abalone = m.def_submodule("abalone");
 
-  abalone.def("heuristic",
-    &abalone::AbaloneHeuristic,
-    py::arg("state"),
-    "Heuristic for state evaluation");
-  
+  py::class_<abalone::AbaloneEvaluator,
+    open_spiel::algorithms::Evaluator,
+    std::shared_ptr<abalone::AbaloneEvaluator>>(abalone, "AbaloneEvaluator")
+      .def(py::init<>())
+      .def("evaluate", &open_spiel::abalone::AbaloneEvaluator::Evaluate)
+      .def("prior", &open_spiel::abalone::AbaloneEvaluator::Prior);
+
   abalone.def("alpha_beta",
     &abalone::AbaloneAB,
     py::arg("state"),

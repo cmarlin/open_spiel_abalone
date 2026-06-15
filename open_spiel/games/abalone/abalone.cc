@@ -399,13 +399,30 @@ std::pair<open_spiel::Action, float> AllAbaloneMoves_ABSpiel(
   return std::make_pair(best_action, best_value);
 }
 
-int AbaloneHeuristic(const State& state) {
-  if (const auto* stt = dynamic_cast<const abalone::AbaloneState*>(&state)) {
-    auto core_stt = stt->core_state_;
-    return Heuristic(core_stt, core_stt.ToPlay());
+std::vector<double> AbaloneEvaluator::Evaluate(const State& state) {
+  auto abalone_state = reinterpret_cast<const abalone::AbaloneState&>(state);
+  // auto core_player = abalone_state.core_state_.ToPlay();
+  auto core_player = abalone_core::CellState::Player0;
+  auto score =
+      abalone_core::Heuristic(abalone_state.core_state_, core_player)
+      * 0.001;
+  std::vector<double> returns = {score, -score};
+  return returns;
+}
+
+ActionsAndProbs AbaloneEvaluator::Prior(const State& state) {
+  // Returns equal probability for all actions.
+  if (state.IsChanceNode()) {
+    return state.ChanceOutcomes();
+  } else {
+    std::vector<Action> legal_actions = state.LegalActions();
+    ActionsAndProbs prior;
+    prior.reserve(legal_actions.size());
+    for (const Action& action : legal_actions) {
+      prior.emplace_back(action, 1.0 / legal_actions.size());
+    }
+    return prior;
   }
-  SpielFatalError("state is not AbaloneState");
-  return 0;
 }
 
 Action AbaloneAB(const State& state, int depth) {
