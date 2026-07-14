@@ -14,6 +14,8 @@
 
 #include "open_spiel/python/pybind11/games_abalone.h"
 
+#include <memory>
+
 #include "open_spiel/games/abalone/abalone.h"
 #include "open_spiel/python/pybind11/pybind11.h"
 
@@ -35,7 +37,8 @@ void init_pyspiel_abalone(::pybind11::module& m) {
     &abalone::AbaloneAB,
     py::arg("state"),
     py::arg("depth"),
-    "Run alpha-beta search and return the best action id.");
+    "Run alpha-beta search and return the best action id, along with the "
+    "list of all evaluated (action, value) pairs.");
 }
 
 }  // namespace open_spiel

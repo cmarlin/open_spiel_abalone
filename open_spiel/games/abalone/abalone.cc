@@ -425,13 +425,21 @@ ActionsAndProbs AbaloneEvaluator::Prior(const State& state) {
   }
 }
 
-Action AbaloneAB(const State& state, int depth) {
+std::pair<Action, std::vector<std::pair<Action, float>>> AbaloneAB(
+    const State& state, int depth) {
   if (const auto* stt = dynamic_cast<const abalone::AbaloneState*>(&state)) {
-    auto best_move = abalone_core::AlphaBeta(stt->core_state_, depth);
-    return static_cast<Action>(best_move.first);
+    std::vector<std::pair<abalone_core::core_Action, float>> core_all_moves;
+    auto best_move = abalone_core::AlphaBeta(
+        stt->core_state_, depth, -1.f, 1.f, &core_all_moves);
+    std::vector<std::pair<Action, float>> all_moves;
+    all_moves.reserve(core_all_moves.size());
+    for (const auto& [action, value] : core_all_moves) {
+      all_moves.emplace_back(static_cast<Action>(action), value);
+    }
+    return {static_cast<Action>(best_move.first), std::move(all_moves)};
   }
   SpielFatalError("state is not AbaloneState");
-  return static_cast<Action>(-1);
+  return {static_cast<Action>(-1), {}};
 }
 
 }  // namespace abalone
