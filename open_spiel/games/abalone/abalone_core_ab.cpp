@@ -60,7 +60,8 @@ int Heuristic(const core_state& _state, CellState _player) {
       - scoreCount[opponent] * RFactor - (14 - ballCount[_player]) * BFactor);
 }
 
-// default values: alpha = -32000 (max), beta = 32000 (min)
+// Default values (see header): alpha = -1 (worst case), beta = 1 (best
+// case).
 float _AlphaBeta(float _alpha, float _beta, const core_state& _state,
                  int _depth, CellState _maximize_player) {
   if (_state.outcome_ != CellState::Invalid) {
@@ -85,7 +86,8 @@ float _AlphaBeta(float _alpha, float _beta, const core_state& _state,
       if (!move.IsValid(_state))
         continue;
       move.Apply(child_state);
-      // Note: we can precompute move heuristic delta to apply to previous eval
+      // Note: we could precompute the move's heuristic delta and apply it
+      // to the previous evaluation.
       auto child_score = _AlphaBeta(
           _alpha, _beta, child_state, _depth - 1, _maximize_player);
 

@@ -65,7 +65,8 @@ RegisterSingleTensorObserver single_tensor(kGameType.short_name);
 }  // namespace
 
 void AbaloneState::UndoAction(Player player, Action action) {
-  // We don't have direct undo functionality, we try to apply whole history
+  // We don't have direct undo functionality, so we replay the whole
+  // history instead.
   history_.pop_back();
   --move_number_;
   ResetBoard();
@@ -86,22 +87,12 @@ void AbaloneState::DoApplyAction(Action action) {
   } else {
     core_state_.outcome_ =
         static_cast<abalone_core::CellState>(1 - core_state_.ToPlay());
-    return;
   }
-  // board_[move] = PlayerToState(CurrentPlayer());
 
-  // test game winner
-  // if (HasLine(current_player_)) {
-  //   outcome_ = current_player_;
-  // }
-  // auto returns = Returns();
-  // if(returns[core_state_.to_play()]==1.0){
-  //   core_state_.outcome_ = core_state_.to_play();
-  // }
-  // update step
-  // core_state_.current_player_ =
-  //     static_cast<abalone_core::CellState>(1 - core_state_.current_player_);
-  // num_moves_ += 1;
+  auto new_returns = Returns();
+  rewards_ = {new_returns[0] - prev_returns_[0],
+              new_returns[1] - prev_returns_[1]};
+  prev_returns_ = new_returns;
 }
 
 std::vector<Action> AbaloneState::LegalActions() const {
@@ -145,12 +136,15 @@ void AbaloneState::ResetBoard() {
 
   core_state_.Reset();
 
-  // we need to reset board with invert
+  // We need to reset the board, applying the inversion if requested.
   for (int r = 0; r < abalone_core::kNumRows; r++) {
     for (int c = 0; c < abalone_core::kNumCols; c++) {
       core_state_.board_[r][c] = invert_board(init_board[r][c]);
     }
   }
+
+  rewards_ = {0.0, 0.0};
+  prev_returns_ = {0.0, 0.0};
 }
 
 Action AbaloneState::StringToAction(Player player,
@@ -227,11 +221,10 @@ bool AbaloneState::IsTerminal() const {
          move_number_ >= abalone_core::kHistoryMax;
 }
 
-// std::vector<double> AbaloneState::Rewards() const {
-// }
+std::vector<double> AbaloneState::Rewards() const { return rewards_; }
 
 std::vector<double> AbaloneState::Returns() const {
-  // set by invalid move
+  // Set by an invalid move.
   if (core_state_.outcome_ != abalone_core::CellState::Invalid) {
     if (core_state_.outcome_ == abalone_core::CellState::Player0)
       return {1.0, -1.0};
@@ -289,7 +282,7 @@ void AbaloneState::ObservationTensor(Player player,
                       abalone_core::kNumCols},
                      true);
 
-  // encode current player's observation to be at the same layer
+  // Encode so the current player's marbles are always on the same layer.
   auto player1_index = 0;
   auto player2_index = 0;
   switch (player) {

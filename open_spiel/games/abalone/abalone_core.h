@@ -46,14 +46,17 @@ constexpr int kNumCells = kNumRows * kNumCols;
 // single move or slide move x2 or x3 from near or far left
 constexpr int kNumActionsPerDirection = 5;
 constexpr int kNumActionsPerCell = Direction_Last * kNumActionsPerDirection;
-constexpr int kHistoryMax = 200;  // a game couldn't last more than that
-// stop a game when one player lost this many marbles (default:6 blitz:4)
+constexpr int kHistoryMax = 200;  // a game can't last longer than this
+// Stop the game once a player has lost this many marbles (default: 6,
+// blitz: 4).
 constexpr int kMarblesToWin = 6;
-constexpr double kMarbleReward = 0.1;  // check: kMarblesToWin*kMarbleReward<1
+constexpr double kMarbleReward = 0.0;  // check: kMarblesToWin*kMarbleReward<1
 constexpr int kCellStates = 2 + kNumPlayers;  // empty, invalid, and players
 const char kDefaultBoard[] = "classic";  // default board to play
-constexpr bool kInvertBoard = false;  // invert player 1 and player 2 positions
-// player with the most marbles wins at end of game (instead of draw)
+// Invert the positions of player 1 and player 2.
+constexpr bool kInvertBoard = false;
+// The player with the most marbles wins at the end of the game (instead
+// of a draw).
 constexpr bool kMarbleAdvantage = false;
 
 // State of a cell.
@@ -167,7 +170,8 @@ constexpr core_Action kActionMin = 0;
 constexpr core_Action kActionMax = kNumCells * kNumActionsPerCell;
 
 // Valid single Move: m_end-m_start == Offset[m_direction].
-// For slide moves: 1 <= length(end-start) <= 2, selection on left of direction
+// For slide moves: 1 <= length(end-start) <= 2. The slide direction is
+// resolved as being to the left of the move direction (see Sisters[]).
 struct Move {
  public:
   Direction m_direction;

@@ -14,7 +14,6 @@
 
 #include <chrono>
 #include <cstdio>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -26,9 +25,6 @@
 
 #include "open_spiel/games/abalone/abalone.h"
 #include "open_spiel/games/abalone/abalone_core_ab.h"
-#include "open_spiel/algorithms/minimax.h"
-#include "open_spiel/algorithms/mcts.h"
-
 
 inline constexpr int kSearchDepthAbalone = 2;
 
@@ -40,8 +36,8 @@ namespace testing = open_spiel::testing;
 
 void BasicAbaloneTests() {
   testing::LoadGameTest("abalone");
-  // testing::NoChanceOutcomesTest(*LoadGame("abalone"));
-  // testing::RandomSimTest(*LoadGame("abalone"), 100);
+  testing::NoChanceOutcomesTest(*LoadGame("abalone"));
+  testing::RandomSimTest(*LoadGame("abalone"), 100);
 }
 
 void RewardAbaloneTest() {
@@ -51,81 +47,24 @@ void RewardAbaloneTest() {
   std::vector<double> rewards = state->Rewards();
   std::vector<double> returns = state->Returns();
 
-  // std::cout << "rewards: " << rewards[0] << " " << rewards[1] << std::endl;
-  // std::cout << "returns: " << returns[0] << " " << returns[1] << std::endl;
+  SPIEL_CHECK_EQ(rewards[0], 0.0);
+  SPIEL_CHECK_EQ(rewards[1], 0.0);
+  SPIEL_CHECK_EQ(returns[0], 0.0);
+  SPIEL_CHECK_EQ(returns[1], 0.0);
 }
 
 std::pair<open_spiel::Action, float> _LogABSpiel(
     std::unique_ptr<State>& state) {
   auto max_move = AllAbaloneMoves_ABSpiel(state, kSearchDepthAbalone);
-  Player player = state->CurrentPlayer();
-  // std::cout << std::endl << "(ab) Player " << player << " choosing action "
-  //           << state->ActionToString(player, max_move.first)
-  //           << " with heuristic value (to black) " << max_move.second
-  //           << std::endl;
   return max_move;
 }
 
 std::pair<abalone_core::core_Action, float> _LogAB(
     std::unique_ptr<State>& state) {
-  auto game = state->GetGame();
-  Player player = state->CurrentPlayer();
-  auto start_time = std::chrono::high_resolution_clock::now();
   auto best_move = abalone_core::AlphaBeta(
       static_cast<abalone::AbaloneState*>(state.get())->core_state_,
       kSearchDepthAbalone, -1.f, 1.f);
-  auto end_time = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<float, std::milli> elapsed = end_time - start_time;
-
-  // std::cout << std::endl << "(core_ab) Player " << player
-  //           << " choosing action "
-  //           << abalone_core::Move::ActionToMove(best_move.first).ToString()
-  //           << " with heuristic value " << best_move.second
-  //           << " in (s) " << elapsed.count()
-  //           << std::endl;
-
   return best_move;
-}
-
-void _LogMCTS(std::unique_ptr<State>& state) {
-  auto game = state->GetGame();
-  auto evaluator =
-      std::make_shared<open_spiel::algorithms::RandomRolloutEvaluator>(20, 42);
-  // auto evaluator = std::make_shared<AbaloneHeuristicEvaluator>();
-  constexpr double UCT_C = 2;
-  algorithms::MCTSBot bot(*game, evaluator, UCT_C,
-                    /*max_simulations=*/ 1000,  // 10000
-                    /*max_memory_mb=*/ 10,
-                    /*solve=*/ true,
-                    /*seed=*/ 42,
-                    /*verbose=*/ false);
-  auto start_time = std::chrono::high_resolution_clock::now();
-  std::unique_ptr<algorithms::SearchNode> root = bot.MCTSearch(*state);
-  auto end_time = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<float, std::milli> elapsed = end_time - start_time;
-
-  // SPIEL_CHECK_TRUE(root->outcome.size() == 2 ||
-  //   root->explore_count == 1000000);
-  // auto best_child = *std::max_element(
-  //   root->children.begin(),
-  //   root->children.end(),
-  //   [](const auto& e1, const auto& e2) {
-  //     return (e1.total_reward/e1.explore_count) <
-  //            (e2.total_reward/e2.explore_count);
-  //   });
-  auto best_child = root->BestChild();
-  // std::cout << "mcts"
-    // << " action: " << abalone_core::Move::ActionToMove(best_child.action)
-    //                                                   .ToString()
-    // << " value: " << best_child.total_reward/best_child.explore_count
-    // << " in (s): " << elapsed.count()*0.001
-    // << std::endl;
-  for (auto node = root->children.begin();
-       node != root->children.end(); node++) {
-    // std::cout << abalone_core::Move::ActionToMove(node->action).ToString()
-    //   << ": " << node->total_reward/node->explore_count
-    //   << std::endl;
-  }
 }
 
 void DatasetTest() {
@@ -248,11 +187,6 @@ void DatasetTest() {
     auto game = LoadGame(std::string("abalone(board=") + game_board
                         + std::string(")"));
     auto state = game->NewInitialState();
-    // state.reset(*);
-    // std::cout << state << std::endl;
-    // auto eval = state.eval();
-    // std::cout << "finished: " << std::get<0>(eval)
-    //           << " eval: " << std::get<1>(eval) << std::endl;
 
     auto str = std::get<2>(scenario);
     int i = 0;
@@ -270,92 +204,40 @@ void DatasetTest() {
         break;
       end = str.find(dl, start);
       auto p1 = str.substr(start, end - start);
-      // std::cout << "p0: " << p1 << std::endl;
       auto p1_move_flag = abalone_core::Move::FromString(p1);
       auto p1_move = std::get<1>(p1_move_flag);
-      // std::cout << "=> p0: " << std::get<0>(p1_move_flag) << " "
-      //           << p1_move.ToString() << std::endl;
-      // std::cout << "p1 valid:" << p1_move.IsValid(state) << std::endl;
-      // assert(p1_move.IsValid(state.));
 
-      // AB P0
+      // Smoke-test the alpha-beta search on real, complex late-game
+      // positions (both the spiel-facing and core-only entry points).
       if (i >= 42) {
-        // std::vector<std::pair<open_spiel::Action, float>> move_spiel;
-        // AllAbaloneMoves_ABSpiel(state, kSearchDepthAbalone, &move_spiel);
-        // std::vector<std::pair<abalone_core::core_Action, float>> move_ab;
-        // abalone_core::AlphaBeta(
-        //     static_cast<abalone::AbaloneState*>(state.get())->core_state_,
-        //     kSearchDepthAbalone, -1.f, 1.f, &move_ab);
-        // SPIEL_CHECK_EQ(move_spiel.size(), move_ab.size());
-        // for (int i = 0; i < move_spiel.size(); ++i) {
-        //   SPIEL_CHECK_EQ(move_spiel[i].first, move_ab[i].first);
-        //   SPIEL_CHECK_FLOAT_NEAR(move_spiel[i].second, move_ab[i].second,
-        //                          1e-3);
-        // }
-
-        auto move_spiel = _LogABSpiel(state);
-        auto move_abalone = _LogAB(state);
-        // SPIEL_CHECK_FLOAT_NEAR(move_spiel.second, move_abalone.second, 1e-3);
-        // SPIEL_CHECK_EQ(move_spiel.first, move_abalone.first);
-        // _LogMCTS(state);
+        _LogABSpiel(state);
+        _LogAB(state);
       }
 
       auto moveId1 = abalone_core::Move::MoveToAction(p1_move);
-      // p1_move.Apply(state);
       state->ApplyAction(moveId1);
-      // std::cout << state->ToString() << std::endl;
 
-      // decode p2 ?
       if ((start = str.find_first_not_of(dl, end)) == std::string::npos)
         break;
       end = str.find(dl, start);
       auto p2 = str.substr(start, end - start);
-      // std::cout << "p1: " << p2 << std::endl;
       auto p2_move_flag = abalone_core::Move::FromString(p2);
       auto p2_move = std::get<1>(p2_move_flag);
-      // std::cout << "=> p1: " << std::get<0>(p2_move_flag) << " "
-      //           << p2_move.ToString() << std::endl;
 
       if (i >= 42) {
-        // std::vector<std::pair<open_spiel::Action, float>> move_spiel;
-        // AllAbaloneMoves_ABSpiel(state, kSearchDepthAbalone, &move_spiel);
-        // std::vector<std::pair<abalone_core::core_Action, float>> move_ab;
-        // abalone_core::AlphaBeta(
-        //     static_cast<abalone::AbaloneState*>(state.get())->core_state_,
-        //     kSearchDepthAbalone, -1.f, 1.f, &move_ab);
-        // SPIEL_CHECK_EQ(move_spiel.size(), move_ab.size());
-        // for (int i = 0; i < move_spiel.size(); ++i) {
-        //   SPIEL_CHECK_EQ(move_spiel[i].first, move_ab[i].first);
-        //   SPIEL_CHECK_FLOAT_NEAR(move_spiel[i].second, move_ab[i].second,
-        //                          1e-3);
-        // }
-
-        auto move_spiel = _LogABSpiel(state);
-        auto move_abalone = _LogAB(state);
-        // SPIEL_CHECK_FLOAT_NEAR(move_spiel.second, move_abalone.second, 1e-3);
-        // SPIEL_CHECK_EQ(move_spiel.first, move_abalone.first);
-        // _LogMCTS(state);
+        _LogABSpiel(state);
+        _LogAB(state);
       }
 
-      // std::cout << "p2 valid:" << p2_move.IsValid(state) << std::endl;
-      // assert(p2_move.IsValid(state));
       auto moveId2 = abalone_core::Move::MoveToAction(p2_move);
-      // p2_move.Apply(state, abalone_core::kMarblesToWin, std::get<1>(game));
       state->ApplyAction(moveId2);
-      // std::cout << state->ToString() << std::endl;
 
-      // heuristic
-      // auto heuristic = Heuristic(state);
-      // std::cout << "heuristic: " << heuristic << std::endl;
-
-      // Action stuff
       auto p1_moveOut = abalone_core::Move::ActionToMove(moveId1);
-      assert(p1_moveOut == p1_move);
+      SPIEL_CHECK_TRUE(p1_moveOut == p1_move);
 
       auto p2_moveOut = abalone_core::Move::ActionToMove(moveId2);
-      assert(p2_moveOut == p2_move);
+      SPIEL_CHECK_TRUE(p2_moveOut == p2_move);
     }
-    // std::cout << "move count:" << i << std::endl;
 
     auto core_state =
         static_cast<abalone::AbaloneState*>(state.get())->core_state_;
@@ -374,12 +256,6 @@ void DatasetTest() {
                         abalone_core::CellState::Player0);
     auto result_balls_P0 = std::get<0>(res);
     auto result_balls_P1 = std::get<1>(res);
-    // std::cout << "board balls P0: " << board_balls_P0
-    //           << " expected balls P0: " << result_balls_P0 << std::endl;
-    // std::cout << "board balls P1: " << board_balls_P1
-    //           << " expected balls P1: " << result_balls_P1 << std::endl;
-    // std::cout << "board result: " << core_state.outcome_
-    //           << " expected game result: " << std::get<2>(res) << std::endl;
     SPIEL_CHECK_TRUE(result_balls_P0 == board_balls_P0);
     SPIEL_CHECK_TRUE(result_balls_P1 == board_balls_P1);
     if (std::get<1>(scenario) < 0) {
@@ -388,11 +264,9 @@ void DatasetTest() {
       SPIEL_CHECK_TRUE(std::get<1>(scenario) == core_state.turn_);
     }
   }
-  // SPIEL_CHECK_TRUE(false);
 }
 
 void StringAbaloneTests() {
-  // SPIEL_CHECK_TRUE(false);
   abalone_core::core_state stt;
   stt.Reset();
   for (auto i = 0;
@@ -402,15 +276,10 @@ void StringAbaloneTests() {
     auto maybe_move = abalone_core::Move::FromString(move_str);
     if (move.IsValid(stt)) {
       SPIEL_CHECK_TRUE(std::get<0>(maybe_move));
-      // std::cout << move_str << std::endl;
-      // printf("%s", move_str.c_str());
       auto move2 = std::get<1>(maybe_move);
       auto action = abalone_core::Move::MoveToAction(move2);
       SPIEL_CHECK_TRUE(action == i);
     }
-    // else {
-    //   SPIEL_CHECK_FALSE(std::get<0>(maybe_move));
-    // }
   }
 }
 

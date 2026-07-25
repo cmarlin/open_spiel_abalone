@@ -10,6 +10,7 @@ we verified against known values and/or reproduced results from papers.
 Status                                       | Game
 -------------------------------------------- | ----
 <font color="orange"><b>~</b></font>         | [2048](#2048)
+<font color="orange"><b>~</b></font>         | [Abalone](#abalone)
 <font color="orange"><b>~</b></font>         | [Amazons](#amazons)
 <font color="orange"><b>~</b></font>         | [Atari](#atari)
 ![](_static/green_circ10.png "green circle") | [Backgammon](#backgammon)
@@ -99,6 +100,17 @@ Status                                       | Game
 *   Perfect information.
 *   1 player.
 *   [Github](https://github.com/gabrielecirulli/2048)
+
+### Abalone
+
+*   Two players push marbles off a hexagonal board, trying to force six of
+    the opponent's marbles off to win.
+*   Marbles on a hexagonal board.
+*   Modern game.
+*   Deterministic.
+*   Perfect information.
+*   2 players.
+*   [Wikipedia](https://en.wikipedia.org/wiki/Abalone_(board_game))
 
 ### Amazons
 

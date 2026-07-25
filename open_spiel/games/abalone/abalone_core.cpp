@@ -346,7 +346,7 @@ bool Move::IsValid(const core_state& _state) const {
   return false;
 }
 
-// @param _dr _dc offsets from move direction
+// @param _dr, _dc: offsets from the move direction
 void Move::_ApplyParallelMove(core_state& _state, int _dr, int _dc) const {
   auto slide_row = std::max(std::min(m_end.m_row - m_start.m_row, 1), -1);
   auto slide_column =
@@ -478,7 +478,8 @@ std::tuple<bool, Move> Move::FromString(const std::string& _str) {
     auto offset = Offsets[dir];
     if (move_vec.m_row == offset.m_row &&
         move_vec.m_column == offset.m_column) {
-      // we suppose slide on left (dir+N) of move direction:
+      // We assume the slide direction is to the left (dir+N) of the move
+      // direction:
       if (Offsets[Sisters[dir].first] == slide_vec ||
           Offsets[Sisters[dir].second] == slide_vec)
         return std::make_tuple(true, Move{ dir, start, end_slide });

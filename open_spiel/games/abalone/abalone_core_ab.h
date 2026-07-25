@@ -20,12 +20,22 @@
 
 #include "open_spiel/games/abalone/abalone_core.h"
 
+// Unlike other OpenSpiel games, Abalone bundles its own alpha-beta solver
+// here instead of relying on the generic open_spiel/algorithms/minimax.h.
+// Reason: this search operates directly on the lightweight `core_state`
+// struct (plain arrays, no virtual dispatch), which lets it explore many
+// more nodes per second than the generic algorithms::AlphaBetaSearch, which
+// walks the polymorphic State/Game API (LegalActions/ApplyAction/UndoAction
+// virtual calls) on every visited node. Abalone's branching factor is large
+// enough that this overhead is significant at useful search depths.
+
 namespace abalone_core {
 
-// @return score relative to _player; range in ]-1000; 1000[
+// @return score relative to _player; range in (-1000, 1000)
 int Heuristic(const core_state& _state, CellState _player);
 
-// @return best move with associated value (ie current state's value)
+// @return best move with associated value (i.e., the current state's
+// value)
 std::pair<core_Action, float> AlphaBeta(
     const core_state& _state, int _depth,
     float _alpha = -1.f, float _beta = 1.f,

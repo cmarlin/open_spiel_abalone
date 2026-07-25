@@ -26,13 +26,15 @@
 #include "open_spiel/algorithms/mcts.h"
 #include "open_spiel/games/abalone/abalone_core.h"
 
-// Game of abalone where you have to push marbles to throw away opponent's ones.
+// Game of Abalone where players push marbles off the board to eliminate
+// the opponent's marbles.
 // Parameters:
 //  "marbles_to_win"   int    marble count to remove from board (default = 6)
 //  "board"            string initial board setup (default = "classic")
 //  "invert"           bool   invert player positions (default = false)
-//  "marble_advantage" bool   if game ends, winner based on most
-//                            removed marbles (default = false)
+//  "marble_advantage" bool   if the game reaches the move limit without a
+//                            winner, the winner is the player who has
+//                            removed the most marbles (default = false)
 
 namespace open_spiel {
 
@@ -55,7 +57,7 @@ class AbaloneState : public State {
 
   std::string ToString() const override;
   bool IsTerminal() const override;
-  // std::vector<double> Rewards() const override;
+  std::vector<double> Rewards() const override;
   std::vector<double> Returns() const override;
   std::string InformationStateString(Player player) const override;
   std::string ObservationString(Player player) const override;
@@ -70,6 +72,12 @@ class AbaloneState : public State {
  protected:
   void DoApplyAction(Action action) override;
   void ResetBoard();
+
+  // Per-step reward, kept consistent with Returns() (Rewards() must sum to
+  // Returns() at every step): Rewards() = Returns() - prev_returns_, updated
+  // once per DoApplyAction.
+  std::vector<double> rewards_ = {0.0, 0.0};
+  std::vector<double> prev_returns_ = {0.0, 0.0};
 
   friend struct Move;
 };
@@ -102,7 +110,7 @@ class AbaloneGame : public Game {
   bool m_marble_advantage;
   double m_marble_reward;
   std::string m_init_board;
-  bool m_init_invert;  // invert position of player 1 and 2
+  bool m_init_invert;  // invert the positions of player 1 and player 2
 };
 
 inline std::ostream& operator<<(std::ostream& stream,
