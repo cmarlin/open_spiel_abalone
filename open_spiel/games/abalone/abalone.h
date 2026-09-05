@@ -47,6 +47,11 @@
 //                            are equal. Zero-sum (default = 0.0)
 //  "seed"             int    seed for the "random-symmetric" board. -1
 //                            means seed by wall-clock time (default = -1)
+//  "egocentric_obs_tensor" bool  Enable the egocentric observation tensors:
+//                            the observing player's marbles are always on
+//                            layer 1, the opponent's on layer 2. When false,
+//                            Player0 is always layer 1, Player 2 layer 2
+//                            (default = true)
 
 namespace open_spiel {
 
@@ -114,6 +119,8 @@ class AbaloneGame : public Game {
   int MaxGameLength() const override { return abalone_core::kHistoryMax; }
   std::string ActionToString(Player player, Action action_id) const override;
 
+  bool egocentric_obs_tensor() const { return m_egocentric_obs_tensor; }
+
  protected:
   friend class AbaloneState;
 
@@ -125,6 +132,7 @@ class AbaloneGame : public Game {
   std::string m_init_board;
   bool m_init_invert;  // invert the positions of player 1 and player 2
   int m_seed;          // seed for the "random-symmetric" board (-1 = time)
+  bool m_egocentric_obs_tensor;
 };
 
 inline std::ostream& operator<<(std::ostream& stream,

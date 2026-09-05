@@ -450,6 +450,67 @@ void StringAbaloneTests() {
   }
 }
 
+void EgocentricObsTensorTest() {
+  // Default: egocentric_obs_tensor = true (preserves existing behaviour).
+  {
+    auto game = LoadGame("abalone");
+    const auto* ab_game = static_cast<const AbaloneGame*>(game.get());
+    SPIEL_CHECK_TRUE(ab_game->egocentric_obs_tensor());
+  }
+
+  // Explicit egocentric = false.
+  {
+    auto game = LoadGame("abalone(egocentric_obs_tensor=false)");
+    const auto* ab_game = static_cast<const AbaloneGame*>(game.get());
+    SPIEL_CHECK_FALSE(ab_game->egocentric_obs_tensor());
+  }
+
+  // In egocentric mode the observing player's marbles are on layer 1.
+  // In absolute mode Player0 is always on layer 1.
+  auto game_egp = LoadGame("abalone");  // egocentric = true (default)
+  auto game_abs = LoadGame("abalone(egocentric_obs_tensor=false)");
+  auto state_egp = game_egp->NewInitialState();
+  auto state_abs = game_abs->NewInitialState();
+
+  // Classic board: Player0 marbles are in rows A-C (bottom),
+  // Player1 marbles in rows G-I (top).
+  auto shape = game_egp->ObservationTensorShape();  // [3, 9, 9]
+  int tensor_size = shape[0] * shape[1] * shape[2];
+  std::vector<float> obs_egp0(tensor_size), obs_egp1(tensor_size);
+  std::vector<float> obs_abs0(tensor_size), obs_abs1(tensor_size);
+  state_egp->ObservationTensor(0, absl::MakeSpan(obs_egp0));
+  state_egp->ObservationTensor(1, absl::MakeSpan(obs_egp1));
+  state_abs->ObservationTensor(0, absl::MakeSpan(obs_abs0));
+  state_abs->ObservationTensor(1, absl::MakeSpan(obs_abs1));
+
+  auto idx = [&](int layer, int row, int col) {
+    return layer * shape[1] * shape[2] + row * shape[2] + col;
+  };
+
+  // Absolute mode: layer assignment is the same for both observers.
+  SPIEL_CHECK_EQ(obs_abs0, obs_abs1);
+
+  // Egocentric mode: layer assignment is swapped between observers.
+  // Layer 1 for observer 0 == layer 2 for observer 1, and vice versa.
+  for (int r = 0; r < shape[1]; ++r) {
+    for (int c = 0; c < shape[2]; ++c) {
+      SPIEL_CHECK_EQ(obs_egp0[idx(1, r, c)], obs_egp1[idx(2, r, c)]);
+      SPIEL_CHECK_EQ(obs_egp0[idx(2, r, c)], obs_egp1[idx(1, r, c)]);
+    }
+  }
+
+  // Absolute mode: Player0 (layer 1) in absolute == observer-0 in egocentric.
+  for (int r = 0; r < shape[1]; ++r) {
+    for (int c = 0; c < shape[2]; ++c) {
+      SPIEL_CHECK_EQ(obs_abs0[idx(1, r, c)], obs_egp0[idx(1, r, c)]);
+      SPIEL_CHECK_EQ(obs_abs0[idx(2, r, c)], obs_egp0[idx(2, r, c)]);
+      // But absolute observer-1 swaps layers relative to egocentric observer-1.
+      SPIEL_CHECK_EQ(obs_abs1[idx(1, r, c)], obs_egp1[idx(2, r, c)]);
+      SPIEL_CHECK_EQ(obs_abs1[idx(2, r, c)], obs_egp1[idx(1, r, c)]);
+    }
+  }
+}
+
 }  // namespace
 }  // namespace abalone
 }  // namespace open_spiel
@@ -461,5 +522,6 @@ int main(int argc, char** argv) {
   open_spiel::abalone::RandomBoardTest();
   open_spiel::abalone::AlphaBetaSeedTest();
   open_spiel::abalone::StringAbaloneTests();
+  open_spiel::abalone::EgocentricObsTensorTest();
   open_spiel::abalone::DatasetTest();
 }

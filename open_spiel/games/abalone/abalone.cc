@@ -55,7 +55,9 @@ const GameType kGameType{
       {"draw_penalty", GameParameter(abalone_core::kDrawPenalty)},
       {"board", GameParameter(abalone_core::kDefaultBoard)},
       {"invert", GameParameter(abalone_core::kInvertBoard)},
-      {"seed", GameParameter(abalone_core::kDefaultSeed)}
+      {"seed", GameParameter(abalone_core::kDefaultSeed)},
+      {"egocentric_obs_tensor",
+       GameParameter(abalone_core::kDefaultEgocentricObsTensor)}
     }  // no parameters
 };
 
@@ -362,18 +364,26 @@ void AbaloneState::ObservationTensor(Player player,
                       abalone_core::kNumCols},
                      true);
 
-  // Encode so the current player's marbles are always on the same layer.
+  const auto& up_game = static_cast<const AbaloneGame&>(*game_);
+  // In egocentric mode, the observing player's marbles are always on layer 1
+  // and the opponent's on layer 2. In absolute mode, Player0 is always layer 1
+  // and Player1 always layer 2.
   auto player1_index = 0;
   auto player2_index = 0;
-  switch (player) {
-    case abalone_core::CellState::Player0:
-      player1_index = 1;
-      player2_index = 2;
-      break;
-    case abalone_core::CellState::Player1:
-      player1_index = 2;
-      player2_index = 1;
-      break;
+  if (up_game.egocentric_obs_tensor()) {
+    switch (player) {
+      case abalone_core::CellState::Player0:
+        player1_index = 1;
+        player2_index = 2;
+        break;
+      case abalone_core::CellState::Player1:
+        player1_index = 2;
+        player2_index = 1;
+        break;
+    }
+  } else {
+    player1_index = 1;
+    player2_index = 2;
   }
 
   for (int row = 0; row < abalone_core::kNumRows; ++row) {
@@ -420,6 +430,8 @@ AbaloneGame::AbaloneGame(const GameParameters& params)
   m_init_invert = ParameterValue<bool>("invert");
   m_marble_advantage = ParameterValue<bool>("marble_advantage");
   m_seed = ParameterValue<int>("seed");
+  m_egocentric_obs_tensor =
+      ParameterValue<bool>("egocentric_obs_tensor");
 }
 
 std::pair<open_spiel::Action, float> AllAbaloneMoves_ABSpiel(

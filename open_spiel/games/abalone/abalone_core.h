@@ -68,6 +68,10 @@ constexpr int kMarblesPerPlayer = 14;
 // Default seed for the random board. -1 means seed by wall-clock time, so
 // each game gets a different random board (follows the tarok convention).
 constexpr int kDefaultSeed = -1;
+// Whether the observation tensor uses an egocentric encoding (the observing
+// player's marbles are always on layer 1, the opponent's on layer 2). When
+// false, Player0's marbles are always on layer 1 and Player1's on layer 2.
+constexpr bool kDefaultEgocentricObsTensor = true;
 
 // State of a cell.
 enum CellState : int8_t {
