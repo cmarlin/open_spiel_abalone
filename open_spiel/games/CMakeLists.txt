@@ -3,6 +3,8 @@ set(GAME_SOURCES
   abalone/abalone.h
   abalone/abalone_core.h
   abalone/abalone_core.cpp
+  abalone/abalone_boards.h
+  abalone/abalone_boards.cpp
   abalone/abalone_core_ab.h
   abalone/abalone_core_ab.cpp
   amazons/amazons.cc

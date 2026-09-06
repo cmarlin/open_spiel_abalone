@@ -25,6 +25,7 @@
 #include "open_spiel/algorithms/minimax.h"
 #include "open_spiel/spiel_utils.h"
 #include "open_spiel/utils/tensor_view.h"
+#include "open_spiel/games/abalone/abalone_boards.h"
 #include "open_spiel/games/abalone/abalone_core_ab.h"
 #include "open_spiel/abseil-cpp/absl/random/distributions.h"
 
@@ -129,15 +130,14 @@ void AbaloneState::ResetBoard() {
   abalone_core::CellState random_board[abalone_core::kNumRows]
                                       [abalone_core::kNumCols];
   const abalone_core::CellState (*init_board)[abalone_core::kNumCols];
-  if (up_game.m_init_board.compare("classic") == 0) {
+  if (up_game.m_init_board == "classical" ||
+      up_game.m_init_board == "classic") {
     init_board = abalone_core::ABALONE_INIT_CLASSIC;
-  } else if (up_game.m_init_board.compare("belgian-daisy") == 0) {
-    init_board = abalone_core::ABALONE_INIT_BELGIAN_DAISY;
   } else if (up_game.m_init_board.compare("random-symmetric") == 0) {
     // Randomly place kMarblesPerPlayer marbles per player, with Player1's
     // marbles the 180-degree rotation (r,c) -> (kNumRows-1-r,
     // kNumCols-1-c) of Player0's, so the position is symmetric (fair to
-    // both players, like "classic" and "belgian-daisy"). A fresh RNG is
+    // both players, like "classical" and "belgian-daisy"). A fresh RNG is
     // seeded from the game's seed each time ResetBoard runs, so the same
     // seed always yields the same board (and UndoAction, which replays
     // history from ResetBoard, reproduces it consistently).
@@ -190,8 +190,19 @@ void AbaloneState::ResetBoard() {
     }
     init_board = random_board;
   } else {
-    SpielFatalError(
-        absl::StrCat("board init not found: ", up_game.m_init_board));
+    init_board = abalone_core::BoardForName(up_game.m_init_board);
+    if (init_board == nullptr) {
+      std::vector<std::string> names = abalone_core::BoardNames();
+      std::sort(names.begin(), names.end());
+      std::string available = "classical, classic, random-symmetric";
+      for (const auto& n : names) {
+        available += ", ";
+        available += n;
+      }
+      SpielFatalError(absl::StrCat(
+          "Unknown board '", up_game.m_init_board,
+          "'. Available boards: ", available));
+    }
   }
 
   auto invert_board = [invert = up_game.m_init_invert](

@@ -106,36 +106,6 @@ const CellState ABALONE_INIT_CLASSIC[kNumRows][kNumCols] = {
      CellState::Player1, CellState::Player1, CellState::Player1},  // i
 };
 
-const CellState ABALONE_INIT_BELGIAN_DAISY[kNumRows][kNumCols] = {
-    {CellState::Player0, CellState::Player0, CellState::Empty,
-     CellState::Player1, CellState::Player1, CellState::Invalid,
-     CellState::Invalid, CellState::Invalid, CellState::Invalid},  // a
-    {CellState::Player0, CellState::Player0, CellState::Player0,
-     CellState::Player1, CellState::Player1, CellState::Player1,
-     CellState::Invalid, CellState::Invalid, CellState::Invalid},  // b
-    {CellState::Empty, CellState::Player0, CellState::Player0,
-     CellState::Empty, CellState::Player1, CellState::Player1,
-     CellState::Empty, CellState::Invalid, CellState::Invalid},    // c
-    {CellState::Empty, CellState::Empty, CellState::Empty,
-     CellState::Empty, CellState::Empty, CellState::Empty,
-     CellState::Empty, CellState::Empty, CellState::Invalid},      // d
-    {CellState::Empty, CellState::Empty, CellState::Empty,
-     CellState::Empty, CellState::Empty, CellState::Empty,
-     CellState::Empty, CellState::Empty, CellState::Empty},        // e
-    {CellState::Invalid, CellState::Empty, CellState::Empty,
-     CellState::Empty, CellState::Empty, CellState::Empty,
-     CellState::Empty, CellState::Empty, CellState::Empty},        // f
-    {CellState::Invalid, CellState::Invalid, CellState::Empty,
-     CellState::Player1, CellState::Player1, CellState::Empty,
-     CellState::Player0, CellState::Player0, CellState::Empty},    // g
-    {CellState::Invalid, CellState::Invalid, CellState::Invalid,
-     CellState::Player1, CellState::Player1, CellState::Player1,
-     CellState::Player0, CellState::Player0, CellState::Player0},  // h
-    {CellState::Invalid, CellState::Invalid, CellState::Invalid,
-     CellState::Invalid, CellState::Player1, CellState::Player1,
-     CellState::Empty, CellState::Player0, CellState::Player0},    // i
-};
-
 
 void core_state::Reset(
     const CellState _init_pattern[kNumRows][kNumCols]) {

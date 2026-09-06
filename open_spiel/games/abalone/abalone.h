@@ -30,12 +30,20 @@
 // the opponent's marbles.
 // Parameters:
 //  "marbles_to_win"   int    marble count to remove from board (default = 6)
-//  "board"            string initial board setup. One of "classic",
-//                            "belgian-daisy", or "random-symmetric"
-//                            (randomly places kMarblesPerPlayer marbles
-//                            per player on valid cells, with Player1's
-//                            marbles the 180-degree rotation of Player0's,
-//                            seeded by "seed") (default = "classic")
+//  "board"            string initial board setup. One of "classical",
+//                            "belgian-daisy", "german-daisy",
+//                            "dutch-daisy", "swiss-daisy", "snakes",
+//                            "the-wall", "alien-attack", "pyramid",
+//                            "crown", "domination", "duel", "star",
+//                            "checkerboard", "wheel", "spider", and many
+//                            more (see abalone_boards.cpp for the full list
+//                            of 60 variants from gym-abalone), or
+//                            "random-symmetric" (randomly places
+//                            kMarblesPerPlayer marbles per player on valid
+//                            cells, with Player1's marbles the 180-degree
+//                            rotation of Player0's, seeded by "seed")
+//                            (default = "classical")
+//                            "classic" is accepted as an alias.
 //  "invert"           bool   invert player positions (default = false)
 //  "marble_advantage" bool   if the game reaches the move limit without a
 //                            winner, the winner is the player who has

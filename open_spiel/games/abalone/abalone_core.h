@@ -57,7 +57,7 @@ constexpr double kMarbleReward = 0.0;  // check: kMarblesToWin*kMarbleReward<1
 // |marble_balance*kMarbleReward| + kDrawPenalty < 1.
 constexpr double kDrawPenalty = 0.0;
 constexpr int kCellStates = 2 + kNumPlayers;  // empty, invalid, and players
-const char kDefaultBoard[] = "classic";  // default board to play
+const char kDefaultBoard[] = "classical";  // default board to play
 // Invert the positions of player 1 and player 2.
 constexpr bool kInvertBoard = false;
 // The player with the most marbles wins at the end of the game (instead
@@ -112,8 +112,8 @@ std::string StateToString(CellState state);
 extern const CellState VALID_BOARD[kNumRows][kNumCols];
 extern const CellState ABALONE_INIT_CLASSIC[kNumRows][kNumCols];
 
-// cf https://abaloneonline.wordpress.com/variations/the-classics/
-extern const CellState ABALONE_INIT_BELGIAN_DAISY[kNumRows][kNumCols];
+// Alternative starting positions (Belgian Daisy, German Daisy, etc.) live in
+// abalone_boards.h/.cpp.
 
 constexpr std::pair<Direction, Direction> Sisters[] = {
     // eq to dir+1 and dir+2
